@@ -102,3 +102,18 @@ npm run dev -- --host 0.0.0.0 --port 5173
 原因：`api_server.py` 未启动。  
 处理：访问 `http://localhost:8005/docs` 确认服务状态。
 
+
+## 8. F-001 Delivery Notes (2026-04-20)
+
+- Created new frontend workspace: `react-frontend/`
+- Initialized stack: Vite + React + TypeScript
+- Installed dependencies: `axios`, `antd`
+- Added base folders and starter files under `src/pages`, `src/components`, `src/services`, `src/styles`
+- Added Axios client scaffold in `src/services/httpClient.ts`
+- Enabled TypeScript strict mode in `react-frontend/tsconfig.app.json`
+
+### Verification
+
+- `npm install` completed successfully in `react-frontend/`
+- `npm run dev -- --host 0.0.0.0 --port 5173` starts successfully
+- `npm run build` succeeds (non-blocking chunk-size warning only)

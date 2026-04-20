@@ -9,7 +9,7 @@
       "npm run dev 可在 5173 端口启动",
       "项目包含基础目录结构（pages/components/services/styles）"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-002",
@@ -168,4 +168,3 @@
     "passes": false
   }
 ]
-
