@@ -1,5 +1,5 @@
 import { Layout, Typography } from 'antd'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ChatComposer } from '../components/chat/ChatComposer'
 import { ChatMessageList } from '../components/chat/ChatMessageList'
 import { ModelSelectorSection } from '../components/chat/ModelSelectorSection'
@@ -12,6 +12,12 @@ import type {
   NetworkState,
   SettingsState,
 } from '../components/chat/types'
+import {
+  ApiClientError,
+  fetchApiHealthSnapshot,
+  sendRagChat,
+  type RouteMode,
+} from '../services'
 import '../styles/chat-page.css'
 
 const { Sider, Content } = Layout
@@ -32,7 +38,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     id: 'assistant-0',
     role: 'assistant',
     content:
-      '欢迎使用端云协同 RAG 聊天界面。当前是布局阶段，后续会接入流式对话和路由策略。',
+      '欢迎使用端云协同 RAG 聊天系统，当前前端已接入统一 API 服务层。',
     createdAt: '09:30:00',
   },
 ]
@@ -41,11 +47,40 @@ function nowTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour12: false })
 }
 
+function toRouteMode(model: ModelOption): RouteMode {
+  if (model === 'cloud') {
+    return 'cloud'
+  }
+
+  if (model === 'local') {
+    return 'local'
+  }
+
+  return 'auto'
+}
+
+function buildHistory(messages: ChatMessage[]) {
+  return messages.map(({ role, content }) => ({ role, content }))
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiClientError) {
+    const targetLabel = error.target === 'local' ? '本地' : '云端'
+    return `${error.message}（来源：${targetLabel}）`
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return '系统异常，请稍后重试。'
+  }
+
+  return '发送请求失败。'
+}
+
 export function ChatPage() {
-  const [model, setModel] = useState<ModelOption>('自动')
+  const [model, setModel] = useState<ModelOption>('auto')
   const [networkStatus, setNetworkStatus] = useState<NetworkState>({
-    localApiOnline: true,
-    cloudApiOnline: true,
+    localApiOnline: false,
+    cloudApiOnline: false,
     lastChecked: nowTime(),
   })
   const [settingsOpen, setSettingsOpen] = useState<boolean>(true)
@@ -56,15 +91,20 @@ export function ChatPage() {
   const [privacyStatusText, setPrivacyStatusText] = useState<string>('')
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [composerText, setComposerText] = useState<string>('')
+  const [isSending, setIsSending] = useState<boolean>(false)
 
-  const canSend = useMemo(() => composerText.trim().length > 0, [composerText])
+  const canSend = useMemo(
+    () => composerText.trim().length > 0 && !isSending,
+    [composerText, isSending],
+  )
 
-  const refreshNetworkStatus = () => {
-    setNetworkStatus((current) => ({
-      ...current,
+  const refreshNetworkStatus = useCallback(async () => {
+    const snapshot = await fetchApiHealthSnapshot()
+    setNetworkStatus({
+      ...snapshot,
       lastChecked: nowTime(),
-    }))
-  }
+    })
+  }, [])
 
   const addPrivacyKeyword = () => {
     const trimmed = keywordInput.trim()
@@ -84,32 +124,67 @@ export function ChatPage() {
   }
 
   const refreshPrivacyKeywords = () => {
-    setPrivacyStatusText(`已刷新关键词列表（${nowTime()}）`)
+    setPrivacyStatusText(`关键词列表已刷新（${nowTime()}）。`)
   }
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!canSend) {
       return
     }
 
     const content = composerText.trim()
-    const sentAt = nowTime()
-
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content,
-      createdAt: sentAt,
+      createdAt: nowTime(),
     }
-    const assistantMessage: ChatMessage = {
-      id: `assistant-${Date.now() + 1}`,
+    const assistantMessageId = `assistant-${Date.now() + 1}`
+    const pendingAssistantMessage: ChatMessage = {
+      id: assistantMessageId,
       role: 'assistant',
-      content: `已收到你的消息（当前模式：${model}）。后续任务会接入真实流式响应。`,
+      content: '正在发送请求...',
       createdAt: nowTime(),
     }
 
-    setMessages((current) => [...current, userMessage, assistantMessage])
+    const history = buildHistory([...messages, userMessage])
+
+    setMessages((current) => [...current, userMessage, pendingAssistantMessage])
     setComposerText('')
+    setIsSending(true)
+
+    try {
+      const response = await sendRagChat({
+        query: content,
+        routeMode: toRouteMode(model),
+        topK: settings.retrievalCount,
+        similarityThreshold: settings.similarityThreshold,
+        history,
+      })
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? { ...message, content: response, createdAt: nowTime() }
+            : message,
+        ),
+      )
+    } catch (error) {
+      const errorMessage = getErrorMessage(error)
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                content: `请求失败：${errorMessage}`,
+                createdAt: nowTime(),
+              }
+            : message,
+        ),
+      )
+    } finally {
+      setIsSending(false)
+    }
   }
 
   return (
@@ -124,7 +199,7 @@ export function ChatPage() {
 
           <NetworkStatusSection
             status={networkStatus}
-            onRefresh={refreshNetworkStatus}
+            onRefresh={() => void refreshNetworkStatus()}
           />
 
           <SettingsSection
@@ -160,7 +235,9 @@ export function ChatPage() {
           <ChatComposer
             value={composerText}
             onChange={setComposerText}
-            onSend={sendMessage}
+            onSend={() => void sendMessage()}
+            disabled={isSending}
+            loading={isSending}
           />
         </div>
       </Content>

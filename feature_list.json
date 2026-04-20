@@ -33,7 +33,7 @@
       "Local/cloud configuration is managed centrally.",
       "Frontend API calls do not use scattered hardcoded URLs."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-004",

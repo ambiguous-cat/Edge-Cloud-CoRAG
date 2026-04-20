@@ -44,3 +44,23 @@
   - Modified: session.txt - appended session record
   - Modified: docs.md - added F-002 delivery notes
 - Notes: Implemented desktop-only layout per explicit user confirmation; mobile adaptation was intentionally out of scope for this delivery.
+
+## Session 4 - 2026-04-20
+- Feature: Build unified API client/configuration layer with local-cloud switching and Chinese UI copy unification (F-003)
+- Status: completed
+- Changes: Added centralized API config for local/cloud endpoints and timeout, implemented shared Axios clients with baseline error normalization, wired chat send and network refresh through service layer, and unified user-facing frontend copy to Chinese.
+- File changes:
+  - Added: react-frontend/src/services/apiConfig.ts
+  - Added: react-frontend/src/services/chatService.ts
+  - Added: react-frontend/src/services/systemService.ts
+  - Modified: react-frontend/src/services/httpClient.ts - unified client creation and baseline error mapping
+  - Modified: react-frontend/src/services/index.ts - centralized service exports
+  - Modified: react-frontend/src/pages/ChatPage.tsx - integrated service layer for send/health checks and readable error display
+  - Modified: react-frontend/src/components/chat/types.ts - model mode value normalization
+  - Modified: react-frontend/src/components/chat/ModelSelectorSection.tsx - mode labels and UI text update
+  - Modified: react-frontend/src/components/chat/ChatComposer.tsx - sending state support and Chinese copy
+  - Modified: react-frontend/src/components/common/ApiHealthCard.tsx - env-var documentation text
+  - Modified: feature_list.json - set F-003 passes to true
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-003 delivery notes
+- Notes: `init.sh` remained non-runnable in this shell due Bash permission constraints (`E_ACCESSDENIED`), so equivalent frontend verification was performed via `npm run lint` and `npm run build`.

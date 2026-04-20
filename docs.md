@@ -113,3 +113,21 @@ Verification:
 
 Scope note:
 - This delivery follows user-confirmed scope for desktop layout only.
+
+## 9. F-003 Delivery Notes (2026-04-20)
+
+- Added centralized API configuration in `src/services/apiConfig.ts`
+  - Supports `VITE_LOCAL_API_BASE_URL`, `VITE_CLOUD_API_BASE_URL`
+  - Preserves compatibility with legacy `VITE_API_BASE_URL`
+  - Supports `VITE_API_TIMEOUT_MS` and `VITE_AUTO_ROUTE_TARGET`
+- Added shared Axios client factory and baseline error normalization in `src/services/httpClient.ts`
+- Added service modules:
+  - `src/services/chatService.ts` for `/rag_chat` requests
+  - `src/services/systemService.ts` for `/system/status` checks
+- Updated `src/pages/ChatPage.tsx` to call backend through the unified services layer instead of local placeholder responses
+- Unified current user-facing frontend copy to Chinese across updated chat and API status components
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded
+- URL hardcoding in frontend request code was centralized under `src/services/apiConfig.ts` and client modules

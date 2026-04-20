@@ -1,4 +1,4 @@
-export type ModelOption = '自动' | '云端' | '本地'
+export type ModelOption = 'auto' | 'cloud' | 'local'
 
 export interface ChatMessage {
   id: string
