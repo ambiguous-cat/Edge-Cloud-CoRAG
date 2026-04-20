@@ -25,3 +25,21 @@
   - Modified: session.txt - append current session record
   - Modified: docs.md - add F-001 scaffold implementation notes
 - Notes: 在当前环境下直接执行 init.sh 受 shell 权限限制，已通过等价命令完成 Node 20 切换与前端验证
+## Session 3 - 2026-04-20
+- Feature: 实现主聊天页面布局（左侧控制区 + 右侧聊天区）（F-002）
+- Status: completed
+- Changes: 完成桌面端主聊天页结构，包含模型选择、网络状态、设置区、隐私管理区、聊天区及输入发送交互
+- File changes:
+  - Added: react-frontend/src/components/chat/types.ts
+  - Added: react-frontend/src/components/chat/ModelSelectorSection.tsx
+  - Added: react-frontend/src/components/chat/NetworkStatusSection.tsx
+  - Added: react-frontend/src/components/chat/SettingsSection.tsx
+  - Added: react-frontend/src/components/chat/PrivacySection.tsx
+  - Added: react-frontend/src/components/chat/ChatMessageList.tsx
+  - Added: react-frontend/src/components/chat/ChatComposer.tsx
+  - Modified: react-frontend/src/pages/ChatPage.tsx - assemble desktop layout and page state
+  - Modified: react-frontend/src/styles/chat-page.css - desktop two-column styling
+  - Modified: feature_list.json - set F-002 passes to true
+  - Modified: session.txt - append current session record
+  - Modified: docs.md - add F-002 delivery notes
+- Notes: 本轮按用户确认范围实现桌面端布局，不包含移动端适配

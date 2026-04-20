@@ -1,37 +1,38 @@
-[
-  {
-    "id": "F-001",
+﻿[
+  {"id": "F-001",
     "category": "core",
     "priority": "high",
-    "description": "创建 react-frontend 脚手架并完成 Vite + React + TypeScript + Axios + Ant Design 初始化。",
+    "description": "鍒涘缓 react-frontend 鑴氭墜鏋跺苟瀹屾垚 Vite + React + TypeScript + Axios + Ant Design 鍒濆鍖栥€?,
     "acceptance_criteria": [
-      "react-frontend 目录可通过 npm install 安装依赖",
-      "npm run dev 可在 5173 端口启动",
-      "项目包含基础目录结构（pages/components/services/styles）"
+      "react-frontend 鐩綍鍙€氳繃 npm install 瀹夎渚濊禆",
+      "npm run dev 鍙湪 5173 绔彛鍚姩",
+      "椤圭洰鍖呭惈鍩虹鐩綍缁撴瀯锛坧ages/components/services/styles锛?
     ],
-    "passes": true
-  },
+    "passes": true},
+    
+  
+
   {
     "id": "F-002",
     "category": "ui",
     "priority": "high",
-    "description": "实现主聊天页面布局，对齐旧版左侧控制区+右侧聊天区结构。",
+    "description": "瀹炵幇涓昏亰澶╅〉闈㈠竷灞€锛屽榻愭棫鐗堝乏渚ф帶鍒跺尯+鍙充晶鑱婂ぉ鍖虹粨鏋勩€?,
     "acceptance_criteria": [
-      "页面包含模型选择、网络状态、设置区、隐私管理区、聊天区",
-      "输入区与发送按钮可用且布局在桌面端和移动端可正常显示",
-      "不依赖 Gradio 组件"
+      "椤甸潰鍖呭惈妯″瀷閫夋嫨銆佺綉缁滅姸鎬併€佽缃尯銆侀殣绉佺鐞嗗尯銆佽亰澶╁尯",
+      "杈撳叆鍖轰笌鍙戦€佹寜閽彲鐢ㄤ笖甯冨眬鍦ㄦ闈㈢鍜岀Щ鍔ㄧ鍙甯告樉绀?,
+      "涓嶄緷璧?Gradio 缁勪欢"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-003",
     "category": "api",
     "priority": "high",
-    "description": "封装统一 API 客户端与配置层，支持 local/cloud 地址切换。",
+    "description": "灏佽缁熶竴 API 瀹㈡埛绔笌閰嶇疆灞傦紝鏀寔 local/cloud 鍦板潃鍒囨崲銆?,
     "acceptance_criteria": [
-      "Axios 实例统一设置超时、基础错误处理",
-      "local/cloud 配置可集中管理",
-      "前端调用接口不直接散落硬编码 URL"
+      "Axios 瀹炰緥缁熶竴璁剧疆瓒呮椂銆佸熀纭€閿欒澶勭悊",
+      "local/cloud 閰嶇疆鍙泦涓鐞?,
+      "鍓嶇璋冪敤鎺ュ彛涓嶇洿鎺ユ暎钀界‖缂栫爜 URL"
     ],
     "passes": false
   },
@@ -39,11 +40,11 @@
     "id": "F-004",
     "category": "integration",
     "priority": "high",
-    "description": "实现流式对话请求与增量渲染，兼容 /rag_chat 的 data 事件格式。",
+    "description": "瀹炵幇娴佸紡瀵硅瘽璇锋眰涓庡閲忔覆鏌擄紝鍏煎 /rag_chat 鐨?data 浜嬩欢鏍煎紡銆?,
     "acceptance_criteria": [
-      "流式内容可逐步追加到最后一条 assistant 消息",
-      "能够识别 content/info/error/done 事件",
-      "网络中断时用户可见错误提示"
+      "娴佸紡鍐呭鍙€愭杩藉姞鍒版渶鍚庝竴鏉?assistant 娑堟伅",
+      "鑳藉璇嗗埆 content/info/error/done 浜嬩欢",
+      "缃戠粶涓柇鏃剁敤鎴峰彲瑙侀敊璇彁绀?
     ],
     "passes": false
   },
@@ -51,11 +52,11 @@
     "id": "F-005",
     "category": "core",
     "priority": "high",
-    "description": "实现自动/云端/本地模式路由与检测开关（缓存/网络/复杂度/隐私）。",
+    "description": "瀹炵幇鑷姩/浜戠/鏈湴妯″紡璺敱涓庢娴嬪紑鍏筹紙缂撳瓨/缃戠粶/澶嶆潅搴?闅愮锛夈€?,
     "acceptance_criteria": [
-      "模式切换影响请求路由策略",
-      "检测开关可实时生效并参与决策",
-      "自动模式下可根据策略回退到本地或云端"
+      "妯″紡鍒囨崲褰卞搷璇锋眰璺敱绛栫暐",
+      "妫€娴嬪紑鍏冲彲瀹炴椂鐢熸晥骞跺弬涓庡喅绛?,
+      "鑷姩妯″紡涓嬪彲鏍规嵁绛栫暐鍥為€€鍒版湰鍦版垨浜戠"
     ],
     "passes": false
   },
@@ -63,11 +64,11 @@
     "id": "F-006",
     "category": "ui",
     "priority": "high",
-    "description": "实现高级设置面板（相似度阈值、检索数量、复杂度阈值）并与请求参数联动。",
+    "description": "瀹炵幇楂樼骇璁剧疆闈㈡澘锛堢浉浼煎害闃堝€笺€佹绱㈡暟閲忋€佸鏉傚害闃堝€硷級骞朵笌璇锋眰鍙傛暟鑱斿姩銆?,
     "acceptance_criteria": [
-      "设置面板支持展开/收起",
-      "3 个阈值参数可持久在当前会话状态中",
-      "发起请求时参数正确传给后端"
+      "璁剧疆闈㈡澘鏀寔灞曞紑/鏀惰捣",
+      "3 涓槇鍊煎弬鏁板彲鎸佷箙鍦ㄥ綋鍓嶄細璇濈姸鎬佷腑",
+      "鍙戣捣璇锋眰鏃跺弬鏁版纭紶缁欏悗绔?
     ],
     "passes": false
   },
@@ -75,23 +76,23 @@
     "id": "F-007",
     "category": "ui",
     "priority": "high",
-    "description": "实现隐私管理面板与隐私关键词管理（新增、刷新列表）。",
+    "description": "瀹炵幇闅愮绠＄悊闈㈡澘涓庨殣绉佸叧閿瘝绠＄悊锛堟柊澧炪€佸埛鏂板垪琛級銆?,
     "acceptance_criteria": [
-      "可调用 /privacy/keywords/add 添加关键词",
-      "可调用 /privacy/keywords 获取并展示关键词列表",
-      "操作成功与失败均有明确 UI 反馈"
-    ],
+      "鍙皟鐢?/privacy/keywords/add 娣诲姞鍏抽敭璇?,
+      "鍙皟鐢?/privacy/keywords 鑾峰彇骞跺睍绀哄叧閿瘝鍒楄〃",
+      "鎿嶄綔鎴愬姛涓庡け璐ュ潎鏈夋槑纭?UI 鍙嶉"
+  ],
     "passes": false
   },
   {
     "id": "F-008",
     "category": "ui",
     "priority": "high",
-    "description": "实现网络状态展示与手动刷新。",
+    "description": "瀹炵幇缃戠粶鐘舵€佸睍绀轰笌鎵嬪姩鍒锋柊銆?,
     "acceptance_criteria": [
-      "可显示基础网络状态与云端 API 状态",
-      "刷新按钮可主动触发状态更新",
-      "异常场景有可读提示"
+      "鍙樉绀哄熀纭€缃戠粶鐘舵€佷笌浜戠 API 鐘舵€?,
+      "鍒锋柊鎸夐挳鍙富鍔ㄨЕ鍙戠姸鎬佹洿鏂?,
+      "寮傚父鍦烘櫙鏈夊彲璇绘彁绀?
     ],
     "passes": false
   },
@@ -99,11 +100,11 @@
     "id": "F-009",
     "category": "ui",
     "priority": "high",
-    "description": "修复并实现复杂度详情弹窗：确保模型状态同步、聊天记录解析正确。",
+    "description": "淇骞跺疄鐜板鏉傚害璇︽儏寮圭獥锛氱‘淇濇ā鍨嬬姸鎬佸悓姝ャ€佽亰澶╄褰曡В鏋愭纭€?,
     "acceptance_criteria": [
-      "当前模型状态与 UI 选择一致并可用于条件判断",
-      "聊天记录解析兼容 React 消息数据结构",
-      "复杂度详情可被正常打开、关闭、展示"
+      "褰撳墠妯″瀷鐘舵€佷笌 UI 閫夋嫨涓€鑷村苟鍙敤浜庢潯浠跺垽鏂?,
+      "鑱婂ぉ璁板綍瑙ｆ瀽鍏煎 React 娑堟伅鏁版嵁缁撴瀯",
+      "澶嶆潅搴﹁鎯呭彲琚甯告墦寮€銆佸叧闂€佸睍绀?
     ],
     "passes": false
   },
@@ -111,11 +112,11 @@
     "id": "F-010",
     "category": "ui",
     "priority": "medium",
-    "description": "实现响应详情弹窗（基本统计、检索统计、文档详情）并提供打开入口。",
+    "description": "瀹炵幇鍝嶅簲璇︽儏寮圭獥锛堝熀鏈粺璁°€佹绱㈢粺璁°€佹枃妗ｈ鎯咃級骞舵彁渚涙墦寮€鍏ュ彛銆?,
     "acceptance_criteria": [
-      "弹窗可通过明确入口打开",
-      "展示内容来自流式 info 事件",
-      "关闭行为正常且不影响对话状态"
+      "寮圭獥鍙€氳繃鏄庣‘鍏ュ彛鎵撳紑",
+      "灞曠ず鍐呭鏉ヨ嚜娴佸紡 info 浜嬩欢",
+      "鍏抽棴琛屼负姝ｅ父涓斾笉褰卞搷瀵硅瘽鐘舵€?
     ],
     "passes": false
   },
@@ -123,11 +124,11 @@
     "id": "F-011",
     "category": "integration",
     "priority": "medium",
-    "description": "实现云端超时回退策略与错误信息分级展示（自动模式回退，本地/云端手动模式提示）。",
+    "description": "瀹炵幇浜戠瓒呮椂鍥為€€绛栫暐涓庨敊璇俊鎭垎绾у睍绀猴紙鑷姩妯″紡鍥為€€锛屾湰鍦?浜戠鎵嬪姩妯″紡鎻愮ず锛夈€?,
     "acceptance_criteria": [
-      "自动模式超时时会执行可见回退",
-      "手动云端模式失败不强制回退并给出建议",
-      "错误信息不泄露无关堆栈细节给普通用户"
+      "鑷姩妯″紡瓒呮椂鏃朵細鎵ц鍙鍥為€€",
+      "鎵嬪姩浜戠妯″紡澶辫触涓嶅己鍒跺洖閫€骞剁粰鍑哄缓璁?,
+      "閿欒淇℃伅涓嶆硠闇叉棤鍏冲爢鏍堢粏鑺傜粰鏅€氱敤鎴?
     ],
     "passes": false
   },
@@ -135,11 +136,11 @@
     "id": "F-012",
     "category": "ui",
     "priority": "medium",
-    "description": "完成纯 CSS 风格体系，保留功能性信息密度并适配移动端。",
+    "description": "瀹屾垚绾?CSS 椋庢牸浣撶郴锛屼繚鐣欏姛鑳芥€т俊鎭瘑搴﹀苟閫傞厤绉诲姩绔€?,
     "acceptance_criteria": [
-      "核心页面在桌面与移动端均可用",
-      "输入区、消息区、侧栏在小屏不遮挡关键操作",
-      "样式不依赖 Tailwind，仅使用 CSS 文件"
+      "鏍稿績椤甸潰鍦ㄦ闈笌绉诲姩绔潎鍙敤",
+      "杈撳叆鍖恒€佹秷鎭尯銆佷晶鏍忓湪灏忓睆涓嶉伄鎸″叧閿搷浣?,
+      "鏍峰紡涓嶄緷璧?Tailwind锛屼粎浣跨敤 CSS 鏂囦欢"
     ],
     "passes": false
   },
@@ -147,11 +148,11 @@
     "id": "F-013",
     "category": "qa",
     "priority": "medium",
-    "description": "建立前端回归检查清单，覆盖主聊天核心流程与异常流程。",
+    "description": "寤虹珛鍓嶇鍥炲綊妫€鏌ユ竻鍗曪紝瑕嗙洊涓昏亰澶╂牳蹇冩祦绋嬩笌寮傚父娴佺▼銆?,
     "acceptance_criteria": [
-      "包含自动/云端/本地三种模式测试项",
-      "包含隐私、复杂度、网络刷新、流式中断等测试项",
-      "清单可复用并可在 session 中引用"
+      "鍖呭惈鑷姩/浜戠/鏈湴涓夌妯″紡娴嬭瘯椤?,
+      "鍖呭惈闅愮銆佸鏉傚害銆佺綉缁滃埛鏂般€佹祦寮忎腑鏂瓑娴嬭瘯椤?,
+      "娓呭崟鍙鐢ㄥ苟鍙湪 session 涓紩鐢?
     ],
     "passes": false
   },
@@ -159,11 +160,11 @@
     "id": "F-014",
     "category": "docs",
     "priority": "low",
-    "description": "补充 React 前端运行与排障文档，明确 nvm + npm 使用方式。",
+    "description": "琛ュ厖 React 鍓嶇杩愯涓庢帓闅滄枃妗ｏ紝鏄庣‘ nvm + npm 浣跨敤鏂瑰紡銆?,
     "acceptance_criteria": [
-      "文档包含 nvm use 20 和 npm install/npm run dev",
-      "文档包含常见报错与排查步骤",
-      "文档与实际目录结构保持一致"
+      "鏂囨。鍖呭惈 nvm use 20 鍜?npm install/npm run dev",
+      "鏂囨。鍖呭惈甯歌鎶ラ敊涓庢帓鏌ユ楠?,
+      "鏂囨。涓庡疄闄呯洰褰曠粨鏋勪繚鎸佷竴鑷?
     ],
     "passes": false
   }

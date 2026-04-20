@@ -117,3 +117,20 @@ npm run dev -- --host 0.0.0.0 --port 5173
 - `npm install` completed successfully in `react-frontend/`
 - `npm run dev -- --host 0.0.0.0 --port 5173` starts successfully
 - `npm run build` succeeds (non-blocking chunk-size warning only)
+
+## 9. F-002 Delivery Notes (2026-04-20)
+
+- Implemented main chat page desktop layout with left control area and right chat area.
+- Left panel now includes model selector, network status, settings section, and privacy management section.
+- Right panel now includes chat message list and composer with send interaction.
+- All UI is implemented with React + Ant Design components (no Gradio dependency).
+
+### Verification
+
+- `npm run build` succeeded.
+- `npm run lint` succeeded.
+- Desktop manual flow verified: model switching, network refresh timestamp update, settings toggle/edit, privacy keyword add/refresh, and message send loop.
+
+### Scope Note
+
+- This delivery follows user-confirmed scope for desktop layout only.
