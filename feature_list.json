@@ -1,0 +1,171 @@
+[
+  {
+    "id": "F-001",
+    "category": "core",
+    "priority": "high",
+    "description": "创建 react-frontend 脚手架并完成 Vite + React + TypeScript + Axios + Ant Design 初始化。",
+    "acceptance_criteria": [
+      "react-frontend 目录可通过 npm install 安装依赖",
+      "npm run dev 可在 5173 端口启动",
+      "项目包含基础目录结构（pages/components/services/styles）"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-002",
+    "category": "ui",
+    "priority": "high",
+    "description": "实现主聊天页面布局，对齐旧版左侧控制区+右侧聊天区结构。",
+    "acceptance_criteria": [
+      "页面包含模型选择、网络状态、设置区、隐私管理区、聊天区",
+      "输入区与发送按钮可用且布局在桌面端和移动端可正常显示",
+      "不依赖 Gradio 组件"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-003",
+    "category": "api",
+    "priority": "high",
+    "description": "封装统一 API 客户端与配置层，支持 local/cloud 地址切换。",
+    "acceptance_criteria": [
+      "Axios 实例统一设置超时、基础错误处理",
+      "local/cloud 配置可集中管理",
+      "前端调用接口不直接散落硬编码 URL"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-004",
+    "category": "integration",
+    "priority": "high",
+    "description": "实现流式对话请求与增量渲染，兼容 /rag_chat 的 data 事件格式。",
+    "acceptance_criteria": [
+      "流式内容可逐步追加到最后一条 assistant 消息",
+      "能够识别 content/info/error/done 事件",
+      "网络中断时用户可见错误提示"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-005",
+    "category": "core",
+    "priority": "high",
+    "description": "实现自动/云端/本地模式路由与检测开关（缓存/网络/复杂度/隐私）。",
+    "acceptance_criteria": [
+      "模式切换影响请求路由策略",
+      "检测开关可实时生效并参与决策",
+      "自动模式下可根据策略回退到本地或云端"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-006",
+    "category": "ui",
+    "priority": "high",
+    "description": "实现高级设置面板（相似度阈值、检索数量、复杂度阈值）并与请求参数联动。",
+    "acceptance_criteria": [
+      "设置面板支持展开/收起",
+      "3 个阈值参数可持久在当前会话状态中",
+      "发起请求时参数正确传给后端"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-007",
+    "category": "ui",
+    "priority": "high",
+    "description": "实现隐私管理面板与隐私关键词管理（新增、刷新列表）。",
+    "acceptance_criteria": [
+      "可调用 /privacy/keywords/add 添加关键词",
+      "可调用 /privacy/keywords 获取并展示关键词列表",
+      "操作成功与失败均有明确 UI 反馈"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-008",
+    "category": "ui",
+    "priority": "high",
+    "description": "实现网络状态展示与手动刷新。",
+    "acceptance_criteria": [
+      "可显示基础网络状态与云端 API 状态",
+      "刷新按钮可主动触发状态更新",
+      "异常场景有可读提示"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-009",
+    "category": "ui",
+    "priority": "high",
+    "description": "修复并实现复杂度详情弹窗：确保模型状态同步、聊天记录解析正确。",
+    "acceptance_criteria": [
+      "当前模型状态与 UI 选择一致并可用于条件判断",
+      "聊天记录解析兼容 React 消息数据结构",
+      "复杂度详情可被正常打开、关闭、展示"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-010",
+    "category": "ui",
+    "priority": "medium",
+    "description": "实现响应详情弹窗（基本统计、检索统计、文档详情）并提供打开入口。",
+    "acceptance_criteria": [
+      "弹窗可通过明确入口打开",
+      "展示内容来自流式 info 事件",
+      "关闭行为正常且不影响对话状态"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-011",
+    "category": "integration",
+    "priority": "medium",
+    "description": "实现云端超时回退策略与错误信息分级展示（自动模式回退，本地/云端手动模式提示）。",
+    "acceptance_criteria": [
+      "自动模式超时时会执行可见回退",
+      "手动云端模式失败不强制回退并给出建议",
+      "错误信息不泄露无关堆栈细节给普通用户"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-012",
+    "category": "ui",
+    "priority": "medium",
+    "description": "完成纯 CSS 风格体系，保留功能性信息密度并适配移动端。",
+    "acceptance_criteria": [
+      "核心页面在桌面与移动端均可用",
+      "输入区、消息区、侧栏在小屏不遮挡关键操作",
+      "样式不依赖 Tailwind，仅使用 CSS 文件"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-013",
+    "category": "qa",
+    "priority": "medium",
+    "description": "建立前端回归检查清单，覆盖主聊天核心流程与异常流程。",
+    "acceptance_criteria": [
+      "包含自动/云端/本地三种模式测试项",
+      "包含隐私、复杂度、网络刷新、流式中断等测试项",
+      "清单可复用并可在 session 中引用"
+    ],
+    "passes": false
+  },
+  {
+    "id": "F-014",
+    "category": "docs",
+    "priority": "low",
+    "description": "补充 React 前端运行与排障文档，明确 nvm + npm 使用方式。",
+    "acceptance_criteria": [
+      "文档包含 nvm use 20 和 npm install/npm run dev",
+      "文档包含常见报错与排查步骤",
+      "文档与实际目录结构保持一致"
+    ],
+    "passes": false
+  }
+]
+

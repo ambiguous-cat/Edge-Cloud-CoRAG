@@ -1,0 +1,17 @@
+# Session History
+
+(Coding agents will append session records here)
+
+## Session 1 - 2026-04-20
+- Feature: 初始化 workflow 协作文件（PROJECT.md / feature_list.json / session.txt / init.sh / docs.md）
+- Status: completed
+- Changes: 为现有项目建立多会话协作基础文件，明确 React 重写目标与执行规范
+- File changes:
+  - Added: PROJECT.md
+  - Added: feature_list.json
+  - Added: session.txt
+  - Added: init.sh
+  - Added: docs.md
+  - Added: .gitignore
+- Notes: 已根据用户要求在 init.sh 中加入 nvm Node 20 切换逻辑；旧前端保留，不纳入删除计划
+

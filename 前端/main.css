@@ -1,0 +1,898 @@
+
+/* 整体界面宽度优化 - 充满整个屏幕 */
+.gradio-container, 
+#root,
+.main,
+.wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 15px !important;
+}
+
+/* 应用容器宽度 */
+.app-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+}
+
+/* 确保主要布局容器充满宽度 */
+.gr-box,
+.gr-form,
+.gr-padded {
+    max-width: 100% !important;
+}
+
+/* 确保行和列布局充满宽度 */
+.gr-row {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.gr-column {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* 移除默认的最大宽度限制 */
+.container {
+    max-width: none !important;
+}
+
+/* 确保聊天框充满可用空间 */
+#chatbot {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* 隐藏的文本框 */
+[data-testid="textbox"]:has(> [visible="false"]) {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+/* 左侧信息区卡片化 */
+.info-card {
+    background: #fafdff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(74,144,226,0.07);
+    padding: 15px 15px 10px 15px;
+    margin-bottom: 12px;
+    border: 1.5px solid #e3eaf3;
+}
+
+/* 左侧面板组件间距优化 */
+.model-selector {
+    margin: 8px 0 !important;
+}
+
+.model-info {
+    margin: 6px 0 !important;
+    font-size: 13px !important;
+}
+
+#network-status {
+    margin: 8px 0 !important;
+    font-size: 13px !important;
+}
+
+#refresh-network-btn {
+    margin: 8px 0 !important;
+    padding: 8px 12px !important;
+}
+
+#status-indicator {
+    margin: 8px 0 !important;
+    font-size: 13px !important;
+}
+
+/* 隐私阈值滑条样式 */
+.privacy-slider {
+    margin: 8px 0;
+}
+
+/* 检索片段数量滑条样式 */
+.retrieval-slider {
+    margin: 8px 0;
+}
+
+/* 设置面板样式 */
+.settings-panel {
+    margin: 12px 0 !important;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.settings-button {
+    width: 100% !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    margin: 8px 0 !important;
+}
+
+.settings-button:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+}
+
+.settings-content {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    padding: 16px !important;
+    border-top: 1px solid #e2e8f0;
+    animation: slideDown 0.3s ease-out;
+}
+
+.settings-title {
+    margin: 0 0 16px 0 !important;
+    padding: 0 !important;
+    color: #2d3748 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px !important;
+}
+
+.close-settings-button {
+    width: 100% !important;
+    background: #f7fafc !important;
+    color: #4a5568 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin-top: 12px !important;
+    transition: all 0.2s ease !important;
+}
+
+.close-settings-button:hover {
+    background: #edf2f7 !important;
+    border-color: #cbd5e0 !important;
+}
+
+/* 设置面板内的滑条样式 */
+.settings-content .privacy-slider,
+.settings-content .similarity-slider,
+.settings-content .retrieval-slider,
+.settings-content .complexity-threshold-slider {
+    margin: 12px 0 !important;
+    padding: 8px 0 !important;
+}
+
+/* 检测功能开关样式（对话框下方） */
+.detection-controls {
+    margin: 8px 0 !important;
+    padding: 8px 12px !important;
+    background: #f8fafc !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+}
+
+.detection-checkbox-inline {
+    margin: 0 !important;
+    padding: 0 !important;
+    flex: 1 !important;
+}
+
+.detection-checkbox-inline label {
+    font-weight: 500 !important;
+    color: #2d3748 !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.detection-checkbox-inline label:hover {
+    background: #edf2f7 !important;
+}
+
+.detection-checkbox-inline input[type="checkbox"] {
+    margin-right: 6px !important;
+    cursor: pointer !important;
+}
+
+/* 设置面板内的检测功能开关样式（保留，以防其他地方使用） */
+.detection-checkbox {
+    margin: 10px 0 !important;
+    padding: 8px 0 !important;
+}
+
+.detection-checkbox label {
+    font-weight: 500 !important;
+    color: #2d3748 !important;
+    font-size: 14px !important;
+}
+
+.detection-checkbox .info {
+    font-size: 12px !important;
+    color: #718096 !important;
+    margin-top: 4px !important;
+}
+
+/* 滑条展开动画 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* 响应信息弹窗样式 */
+.response-info-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    padding: 24px !important;
+    max-width: 800px !important;
+    width: 90% !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    z-index: 1000 !important;
+    border: 1px solid #e2e8f0 !important;
+    animation: modalFadeIn 0.3s ease-out !important;
+}
+
+.modal-title {
+    margin: 0 0 20px 0 !important;
+    padding: 0 0 12px 0 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    color: #2d3748 !important;
+    font-size: 20px !important;
+    font-weight: 600 !important;
+}
+
+.basic-info, .filter-info, .documents-info {
+    background: #f8fafc !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin: 8px 0 !important;
+    border-left: 4px solid #4facfe !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+}
+
+.close-modal-button {
+    width: 100% !important;
+    background: #f7fafc !important;
+    color: #4a5568 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin-top: 16px !important;
+    transition: all 0.2s ease !important;
+}
+
+.close-modal-button:hover {
+    background: #edf2f7 !important;
+    border-color: #cbd5e0 !important;
+}
+
+/* 弹窗背景遮罩 */
+.response-info-modal::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+}
+
+/* 弹窗动画 */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+
+/* 检索滑条说明文字居中 */
+.retrieval-slider * {
+    text-align: center !important;
+}
+
+/* HTML details 折叠样式 */
+details {
+    margin: 12px 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background: #f8fafc !important;
+    overflow: hidden !important;
+}
+
+details summary {
+    padding: 12px 16px !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+    list-style: none !important;
+}
+
+details summary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+    transform: translateY(-1px) !important;
+}
+
+details summary::-webkit-details-marker {
+    display: none !important;
+}
+
+details summary::before {
+    content: "▼" !important;
+    float: right !important;
+    font-size: 12px !important;
+    transition: transform 0.3s ease !important;
+}
+
+details[open] summary::before {
+    transform: rotate(180deg) !important;
+}
+
+details[open] summary {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+details > div, details > p {
+    padding: 16px !important;
+    background: white !important;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+    color: #4a5568 !important;
+    margin: 0 !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    border: 1px solid #f1f5f9 !important;
+    border-radius: 4px !important;
+}
+
+details strong {
+    color: #2d3748 !important;
+}
+
+/* 引用文档内容样式 */
+details pre, details code {
+    background: #f8fafc !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 12px !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+/* 文档分隔线样式 */
+details hr {
+    border: none !important;
+    border-top: 2px solid #e2e8f0 !important;
+    margin: 16px 0 !important;
+}
+
+/* 滚动条样式 */
+details > div::-webkit-scrollbar {
+    width: 6px !important;
+}
+
+details > div::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 3px !important;
+}
+
+details > div::-webkit-scrollbar-thumb {
+    background: #cbd5e0 !important;
+    border-radius: 3px !important;
+}
+
+details > div::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0 !important;
+}
+
+.retrieval-slider label {
+    text-align: left !important; /* 标题保持左对齐 */
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* 检索滑条数值显示框样式 */
+.retrieval-slider input[type="number"] {
+    width: 60px !important;
+    max-width: 60px !important;
+    min-width: 60px !important;
+    text-align: center !important;
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.retrieval-slider input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.retrieval-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.retrieval-slider input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* 隐私滑条说明文字居中 - 使用更通用的选择器 */
+.privacy-slider * {
+    text-align: center !important;
+}
+
+.privacy-slider label {
+    text-align: left !important; /* 标题保持左对齐 */
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* 隐私滑条数值显示框样式 */
+.privacy-slider input[type="number"] {
+    width: 60px !important;
+    max-width: 60px !important;
+    min-width: 60px !important;
+    text-align: center !important;
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.privacy-slider input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.privacy-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.privacy-slider input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* 信息区分隔线 */
+.info-divider {
+    border: none;
+    border-top: 1px solid #e3eaf3;
+    margin: 12px 0 12px 0;
+}
+
+/* 状态指示器样式优化 */
+#status-indicator {
+    margin-top: 10px;
+    font-size: 1.08em;
+    color: #39c5bb;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* 模型信息样式 */
+.model-info {
+    padding: 10px 15px;
+    background: #e8f4fc;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 1.05em;
+    color: #2176ae;
+}
+
+/* 增强聊天区域 */
+.enhanced-chat {
+    border: 1px solid #dee7f1;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* 上传按钮样式 */
+.upload-button {
+    margin-left: 10px !important;
+    background: linear-gradient(90deg, #4a90e2 60%, #39c5bb 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    transition: box-shadow 0.2s;
+}
+.upload-button:hover {
+    box-shadow: 0 4px 16px rgba(74,144,226,0.18);
+}
+
+
+/* 模型选择器容器 */
+.model-selector-container {
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* 网络状态显示 */
+#network-status {
+    padding: 8px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    font-size: 1.08em;
+    color: #2176ae;
+}
+
+/* 隐私提示 */
+.privacy-notice {
+    padding: 2px 15px;
+    background: #F0F8FF;
+    border-radius: 2px;
+    margin-bottom: 15px;
+    border: 1px solid #39c5bb;
+    text-align: center;
+    color: #2176ae;
+    font-size: 0.98em;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e6f7ff 100%);
+    background-attachment: fixed;
+    padding: 20px;
+}
+
+/* 聊天消息增强 */
+.user-message {
+    background: linear-gradient(135deg, #4a90e2, #2a75b0) !important;
+    border-radius: 18px 18px 4px 18px !important;
+}
+
+.assistant-message {
+    background: linear-gradient(135deg, #3a3a45, #2a2a35) !important;
+    border-radius: 18px 18px 18px 4px !important;
+}
+
+/* 输入区域增强 */
+.input-container {
+    padding: 18px 15px 12px 15px;
+    background: #fafdff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(74, 144, 226, 0.10);
+    display: flex !important;
+    align-items: stretch !important; /* 让子元素高度一致 */
+    gap: 12px !important; /* 输入框和按钮之间的间距 */
+}
+
+/* 输入框样式优化 */
+.input-box textarea {
+    min-height: 48px !important; /* 与按钮高度对齐 */
+    resize: vertical !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    transition: all 0.2s ease !important;
+}
+
+.input-box textarea:focus {
+    border-color: #4facfe !important;
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1) !important;
+    outline: none !important;
+}
+
+/* 发送按钮样式 */
+.action-button {
+    background: linear-gradient(90deg, #4a90e2 0%, #39c5bb 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 20px !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+    min-height: 48px !important; /* 设置最小高度与输入框对齐 */
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 按钮悬停效果增强 */
+.action-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(74, 144, 226, 0.4);
+    background: linear-gradient(90deg, #4a90e2 60%, #39c5bb 100%) !important;
+    color: #fff !important;
+}
+
+/* 卡片悬停效果增强 */
+.feature-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* 聊天区自适应宽度 */
+.app-container, .enhanced-chat {
+    max-width: 100vw;
+}
+
+@media (max-width: 900px) {
+    .app-container {
+        padding: 8px;
+        border-radius: 8px;
+    }
+    .info-card {
+        padding: 10px 6px 8px 6px;
+        margin-bottom: 10px;
+    }
+    .input-container {
+        padding: 10px 6px 8px 6px;
+    }
+    .enhanced-chat {
+        min-width: 0;
+        font-size: 0.98em;
+    }
+}
+
+
+/* 上传按钮增强 */
+.upload-button {
+    padding: 12px 20px !important;
+    font-weight: 500 !important;
+    border-width: 1.5px !important;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f6f8fa;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.app-title {
+    text-align: center;
+    margin-bottom: 5px;
+    background: linear-gradient(135deg, #4a90e2, #39c5bb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 8px 0;
+}
+
+.app-title h1 {
+    font-size: 2.5rem;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin: 0;
+    padding: 3px 0;
+    line-height: 1.2;
+}
+
+/* 增强模型选择器 */
+.model-selector .wrap {
+    padding: 10px 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    border: 2px solid #dee7f1;
+    font-weight: 400;
+}
+
+.model-selector .wrap:hover {
+    border-color: #4a90e2;
+}
+
+/* 隐私管理按钮样式 */
+.privacy-management-button {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    margin-top: 8px !important;
+    box-shadow: 0 2px 4px rgba(229, 62, 62, 0.2) !important;
+}
+
+.privacy-management-button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3) !important;
+    background: linear-gradient(135deg, #c53030 0%, #9c2626 100%) !important;
+}
+
+/* 隐私管理面板样式 */
+.privacy-management-content {
+    background: #fef5f5 !important;
+    border: 1px solid #fed7d7 !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-top: 12px !important;
+    animation: slideDown 0.3s ease-out !important;
+}
+
+.privacy-management-title {
+    margin: 0 0 16px 0 !important;
+    padding: 0 0 8px 0 !important;
+    border-bottom: 2px solid #fed7d7 !important;
+    color: #c53030 !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+.privacy-subtitle {
+    margin: 20px 0 10px 0 !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid #fed7d7 !important;
+    color: #c53030 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+.close-privacy-management-button {
+    background: #fed7d7 !important;
+    color: #c53030 !important;
+    border: 1px solid #fed7d7 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin-top: 16px !important;
+    transition: all 0.2s ease !important;
+    width: 100% !important;
+}
+
+.close-privacy-management-button:hover {
+    background: #feb2b2 !important;
+    border-color: #fc8181 !important;
+}
+
+/* 隐私词管理样式 */
+.settings-subtitle {
+    margin: 20px 0 10px 0 !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #2d3748 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+.privacy-keyword-input input {
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+}
+
+.privacy-keyword-input input:focus {
+    border-color: #4facfe !important;
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1) !important;
+}
+
+.add-privacy-keyword-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    margin-left: 8px !important;
+}
+
+.add-privacy-keyword-button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+.privacy-keyword-status {
+    margin: 8px 0 !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.current-privacy-keywords {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin: 8px 0 !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    max-height: 120px !important;
+    overflow-y: auto !important;
+}
+
+.refresh-privacy-keywords-button {
+    background: #f7fafc !important;
+    color: #4a5568 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    transition: all 0.2s ease !important;
+    margin-top: 8px !important;
+}
+
+.refresh-privacy-keywords-button:hover {
+    background: #edf2f7 !important;
+    border-color: #cbd5e0 !important;
+}
