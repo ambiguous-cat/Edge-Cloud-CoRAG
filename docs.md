@@ -1,39 +1,44 @@
-# 端云协同RAG前端重构文档
+# Edge-Cloud RAG Frontend Refactor Documentation
 
-## 1. 项目概述
+## 1. Project Overview
 
-本项目当前以 Python RAG 服务为核心，原有主前端使用 Gradio。  
-重构目标是在不删除旧前端的前提下，新增 `react-frontend/`，使用 React 技术栈重写主聊天前端（不包含“知识库前端”）。
+This project keeps the existing Python RAG backend and legacy Gradio frontend, while introducing a new React frontend for the main chat experience.
 
-## 2. 技术栈
+Key goals:
+- Preserve the legacy frontend directory.
+- Do not rewrite or remove the knowledge-base frontend directory.
+- Build the new frontend in `react-frontend/`.
+- Use Node 20.x managed by `nvm`.
 
-- Backend: Python + FastAPI + SQLite + FAISS + Ollama
+## 2. Tech Stack
+
+- Backend: Python, FastAPI, SQLite, FAISS, Ollama
 - Legacy Frontend: Gradio
-- New Frontend (target): Vite + React + TypeScript + Axios + Ant Design + pure CSS
+- New Frontend: Vite, React, TypeScript, Axios, Ant Design, CSS
 - Node manager: nvm
 - Package manager: npm
 
-## 3. 运行方式
+## 3. Run Instructions
 
-### 3.1 环境启动（统一）
+### 3.1 Standard Startup
 
 ```bash
 ./init.sh
 ```
 
-`init.sh` 行为：
-- 尝试执行 `nvm use 20`
-- 后台启动 `api_server.py`（8005）
-- 若 `react-frontend/` 已存在则后台启动前端（5173）
+Expected behavior of `init.sh`:
+- Attempts `nvm use 20`
+- Starts backend service (`api_server.py`) on port 8005
+- Starts new frontend (`react-frontend`) on port 5173 if present
 
-### 3.2 手动启动（可选）
+### 3.2 Manual Startup
 
-后端：
+Backend:
 ```bash
 python api_server.py
 ```
 
-新前端（脚手架完成后）：
+Frontend:
 ```bash
 cd react-frontend
 nvm use 20
@@ -41,69 +46,46 @@ npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-## 4. 架构说明
+## 4. Architecture Notes
 
-### 4.1 当前架构
+### 4.1 Current Core Components
 
-- API 服务入口：`api_server.py`
-- RAG 服务：`rag_chat.py`
-- 原主前端：`前端/`
-- 知识库前端：`知识库前端/`
+- API entry: `api_server.py`
+- RAG flow: `rag_chat.py`
+- Legacy frontend: preserved in original folder
+- New React frontend: `react-frontend/`
 
-### 4.2 目标架构（重构后）
+### 4.2 Target Direction
 
-- 保留：`前端/`（仅作对照/回退）
-- 新增：`react-frontend/`（主前端）
-- 后端接口保持兼容，优先复用现有 `/rag_chat`、`/privacy_*`、`/complexity/*`、`/system/*`
+- Keep legacy frontend for reference/fallback.
+- Deliver main chat features in the React frontend.
+- Keep API protocol compatible with existing backend endpoints first.
 
-## 5. 项目目录结构（当前）
+## 5. Refactor Scope
 
-```text
-新建文件夹/
-├─ api_server.py
-├─ rag_chat.py
-├─ chat_model.py
-├─ complexity_analyzer.py
-├─ privacy_detector.py
-├─ search_similar_documents.py
-├─ 前端/
-├─ 知识库前端/
-├─ 云端/
-├─ privacy_data/
-├─ 语料/
-├─ PROJECT.md
-├─ feature_list.json
-├─ session.txt
-├─ init.sh
-└─ docs.md
-```
+Included:
+- Main chat frontend rewrite and alignment
+- Fixes for known frontend issues (state sync, modal behavior, data structure handling, error visibility)
 
-## 6. 重构范围
+Excluded:
+- Knowledge-base frontend rewrite
+- Deletion of legacy frontend
 
-包含：
-- 主聊天前端功能全量复刻
-- 已知问题修复（状态同步、弹窗可达性、消息结构兼容、错误处理等）
+## 6. Troubleshooting
 
-不包含：
-- 知识库前端重写
-- 旧前端删除
+1. `nvm` not found
+- Cause: current shell did not load nvm.
+- Fix: load nvm in the current shell and run `nvm use 20`.
 
-## 7. 常见问题排查
+2. Frontend fails to start
+- Cause: dependencies missing or port conflict.
+- Fix: run `npm install`, then retry; check whether port 5173 is occupied.
 
-1. `nvm` 命令不可用  
-原因：shell 未加载 nvm。  
-处理：在当前 shell 先加载 nvm，再执行 `nvm use 20`。
+3. Backend endpoint not reachable
+- Cause: `api_server.py` not running.
+- Fix: check `http://localhost:8005/docs`.
 
-2. 前端无法启动  
-原因：依赖未安装或端口占用。  
-处理：`npm install` 后重试，检查 5173 端口占用。
-
-3. 后端接口不可达  
-原因：`api_server.py` 未启动。  
-处理：访问 `http://localhost:8005/docs` 确认服务状态。
-
-
-## 8. F-001 Delivery Notes (2026-04-20)
+## 7. F-001 Delivery Notes (2026-04-20)
 
 - Created new frontend workspace: `react-frontend/`
 - Initialized stack: Vite + React + TypeScript
@@ -112,25 +94,22 @@ npm run dev -- --host 0.0.0.0 --port 5173
 - Added Axios client scaffold in `src/services/httpClient.ts`
 - Enabled TypeScript strict mode in `react-frontend/tsconfig.app.json`
 
-### Verification
-
+Verification:
 - `npm install` completed successfully in `react-frontend/`
 - `npm run dev -- --host 0.0.0.0 --port 5173` starts successfully
 - `npm run build` succeeds (non-blocking chunk-size warning only)
 
-## 9. F-002 Delivery Notes (2026-04-20)
+## 8. F-002 Delivery Notes (2026-04-20)
 
-- Implemented main chat page desktop layout with left control area and right chat area.
-- Left panel now includes model selector, network status, settings section, and privacy management section.
-- Right panel now includes chat message list and composer with send interaction.
-- All UI is implemented with React + Ant Design components (no Gradio dependency).
+- Implemented main chat page desktop layout with left control area and right chat area
+- Left panel includes model selector, network status, settings section, and privacy management section
+- Right panel includes chat message list and composer with send interaction
+- UI is implemented with React + Ant Design components (no Gradio dependency)
 
-### Verification
+Verification:
+- `npm run build` succeeded
+- `npm run lint` succeeded
+- Desktop manual flow verified: model switching, network refresh timestamp update, settings toggle/edit, privacy keyword add/refresh, and message send loop
 
-- `npm run build` succeeded.
-- `npm run lint` succeeded.
-- Desktop manual flow verified: model switching, network refresh timestamp update, settings toggle/edit, privacy keyword add/refresh, and message send loop.
-
-### Scope Note
-
+Scope note:
 - This delivery follows user-confirmed scope for desktop layout only.

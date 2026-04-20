@@ -1,26 +1,25 @@
-﻿[
-  {"id": "F-001",
+[
+  {
+    "id": "F-001",
     "category": "core",
     "priority": "high",
-    "description": "鍒涘缓 react-frontend 鑴氭墜鏋跺苟瀹屾垚 Vite + React + TypeScript + Axios + Ant Design 鍒濆鍖栥€?,
+    "description": "Create the react-frontend scaffold and complete initialization with Vite + React + TypeScript + Axios + Ant Design.",
     "acceptance_criteria": [
-      "react-frontend 鐩綍鍙€氳繃 npm install 瀹夎渚濊禆",
-      "npm run dev 鍙湪 5173 绔彛鍚姩",
-      "椤圭洰鍖呭惈鍩虹鐩綍缁撴瀯锛坧ages/components/services/styles锛?
+      "Dependencies in react-frontend can be installed via npm install.",
+      "npm run dev starts successfully on port 5173.",
+      "The project includes the base directory structure (pages/components/services/styles)."
     ],
-    "passes": true},
-    
-  
-
+    "passes": true
+  },
   {
     "id": "F-002",
     "category": "ui",
     "priority": "high",
-    "description": "瀹炵幇涓昏亰澶╅〉闈㈠竷灞€锛屽榻愭棫鐗堝乏渚ф帶鍒跺尯+鍙充晶鑱婂ぉ鍖虹粨鏋勩€?,
+    "description": "Implement the main chat page layout aligned with the legacy structure: left control panel + right chat panel.",
     "acceptance_criteria": [
-      "椤甸潰鍖呭惈妯″瀷閫夋嫨銆佺綉缁滅姸鎬併€佽缃尯銆侀殣绉佺鐞嗗尯銆佽亰澶╁尯",
-      "杈撳叆鍖轰笌鍙戦€佹寜閽彲鐢ㄤ笖甯冨眬鍦ㄦ闈㈢鍜岀Щ鍔ㄧ鍙甯告樉绀?,
-      "涓嶄緷璧?Gradio 缁勪欢"
+      "The page includes model selection, network status, settings, privacy management, and chat area.",
+      "The input area and send button are usable, and the layout displays correctly on desktop and mobile.",
+      "No Gradio components are used."
     ],
     "passes": true
   },
@@ -28,11 +27,11 @@
     "id": "F-003",
     "category": "api",
     "priority": "high",
-    "description": "灏佽缁熶竴 API 瀹㈡埛绔笌閰嶇疆灞傦紝鏀寔 local/cloud 鍦板潃鍒囨崲銆?,
+    "description": "Build a unified API client and configuration layer with support for local/cloud base URL switching.",
     "acceptance_criteria": [
-      "Axios 瀹炰緥缁熶竴璁剧疆瓒呮椂銆佸熀纭€閿欒澶勭悊",
-      "local/cloud 閰嶇疆鍙泦涓鐞?,
-      "鍓嶇璋冪敤鎺ュ彛涓嶇洿鎺ユ暎钀界‖缂栫爜 URL"
+      "The Axios instance has unified timeout and baseline error handling.",
+      "Local/cloud configuration is managed centrally.",
+      "Frontend API calls do not use scattered hardcoded URLs."
     ],
     "passes": false
   },
@@ -40,11 +39,11 @@
     "id": "F-004",
     "category": "integration",
     "priority": "high",
-    "description": "瀹炵幇娴佸紡瀵硅瘽璇锋眰涓庡閲忔覆鏌擄紝鍏煎 /rag_chat 鐨?data 浜嬩欢鏍煎紡銆?,
+    "description": "Implement streaming chat requests and incremental rendering compatible with the /rag_chat data event format.",
     "acceptance_criteria": [
-      "娴佸紡鍐呭鍙€愭杩藉姞鍒版渶鍚庝竴鏉?assistant 娑堟伅",
-      "鑳藉璇嗗埆 content/info/error/done 浜嬩欢",
-      "缃戠粶涓柇鏃剁敤鎴峰彲瑙侀敊璇彁绀?
+      "Streaming content is appended incrementally to the latest assistant message.",
+      "The client recognizes content/info/error/done events.",
+      "Users receive readable error feedback when network interruption happens."
     ],
     "passes": false
   },
@@ -52,11 +51,11 @@
     "id": "F-005",
     "category": "core",
     "priority": "high",
-    "description": "瀹炵幇鑷姩/浜戠/鏈湴妯″紡璺敱涓庢娴嬪紑鍏筹紙缂撳瓨/缃戠粶/澶嶆潅搴?闅愮锛夈€?,
+    "description": "Implement auto/cloud/local mode routing and detection toggles (cache/network/complexity/privacy).",
     "acceptance_criteria": [
-      "妯″紡鍒囨崲褰卞搷璇锋眰璺敱绛栫暐",
-      "妫€娴嬪紑鍏冲彲瀹炴椂鐢熸晥骞跺弬涓庡喅绛?,
-      "鑷姩妯″紡涓嬪彲鏍规嵁绛栫暐鍥為€€鍒版湰鍦版垨浜戠"
+      "Mode switching affects request routing strategy.",
+      "Detection toggles take effect in real time and participate in decisions.",
+      "In auto mode, routing can fall back to local or cloud according to strategy."
     ],
     "passes": false
   },
@@ -64,11 +63,11 @@
     "id": "F-006",
     "category": "ui",
     "priority": "high",
-    "description": "瀹炵幇楂樼骇璁剧疆闈㈡澘锛堢浉浼煎害闃堝€笺€佹绱㈡暟閲忋€佸鏉傚害闃堝€硷級骞朵笌璇锋眰鍙傛暟鑱斿姩銆?,
+    "description": "Implement an advanced settings panel (similarity threshold, retrieval count, complexity threshold) and link it to request parameters.",
     "acceptance_criteria": [
-      "璁剧疆闈㈡澘鏀寔灞曞紑/鏀惰捣",
-      "3 涓槇鍊煎弬鏁板彲鎸佷箙鍦ㄥ綋鍓嶄細璇濈姸鎬佷腑",
-      "鍙戣捣璇锋眰鏃跺弬鏁版纭紶缁欏悗绔?
+      "The settings panel supports expand/collapse.",
+      "The three threshold parameters persist in the current session state.",
+      "Parameters are passed correctly to the backend when sending requests."
     ],
     "passes": false
   },
@@ -76,23 +75,23 @@
     "id": "F-007",
     "category": "ui",
     "priority": "high",
-    "description": "瀹炵幇闅愮绠＄悊闈㈡澘涓庨殣绉佸叧閿瘝绠＄悊锛堟柊澧炪€佸埛鏂板垪琛級銆?,
+    "description": "Implement a privacy management panel and privacy keyword management (add and refresh list).",
     "acceptance_criteria": [
-      "鍙皟鐢?/privacy/keywords/add 娣诲姞鍏抽敭璇?,
-      "鍙皟鐢?/privacy/keywords 鑾峰彇骞跺睍绀哄叧閿瘝鍒楄〃",
-      "鎿嶄綔鎴愬姛涓庡け璐ュ潎鏈夋槑纭?UI 鍙嶉"
-  ],
+      "The UI can call /privacy/keywords/add to add keywords.",
+      "The UI can call /privacy/keywords to fetch and display keyword list.",
+      "Both success and failure states provide clear UI feedback."
+    ],
     "passes": false
   },
   {
     "id": "F-008",
     "category": "ui",
     "priority": "high",
-    "description": "瀹炵幇缃戠粶鐘舵€佸睍绀轰笌鎵嬪姩鍒锋柊銆?,
+    "description": "Implement network status display and manual refresh.",
     "acceptance_criteria": [
-      "鍙樉绀哄熀纭€缃戠粶鐘舵€佷笌浜戠 API 鐘舵€?,
-      "鍒锋柊鎸夐挳鍙富鍔ㄨЕ鍙戠姸鎬佹洿鏂?,
-      "寮傚父鍦烘櫙鏈夊彲璇绘彁绀?
+      "The UI displays basic network status and cloud API status.",
+      "The refresh button actively triggers status updates.",
+      "Error scenarios provide readable feedback."
     ],
     "passes": false
   },
@@ -100,11 +99,11 @@
     "id": "F-009",
     "category": "ui",
     "priority": "high",
-    "description": "淇骞跺疄鐜板鏉傚害璇︽儏寮圭獥锛氱‘淇濇ā鍨嬬姸鎬佸悓姝ャ€佽亰澶╄褰曡В鏋愭纭€?,
+    "description": "Fix and implement the complexity detail modal: ensure model state synchronization and correct chat-history parsing.",
     "acceptance_criteria": [
-      "褰撳墠妯″瀷鐘舵€佷笌 UI 閫夋嫨涓€鑷村苟鍙敤浜庢潯浠跺垽鏂?,
-      "鑱婂ぉ璁板綍瑙ｆ瀽鍏煎 React 娑堟伅鏁版嵁缁撴瀯",
-      "澶嶆潅搴﹁鎯呭彲琚甯告墦寮€銆佸叧闂€佸睍绀?
+      "Current model state is consistent with UI selection and can be used in condition checks.",
+      "Chat-history parsing is compatible with the React message data structure.",
+      "The complexity detail modal can open, close, and render correctly."
     ],
     "passes": false
   },
@@ -112,11 +111,11 @@
     "id": "F-010",
     "category": "ui",
     "priority": "medium",
-    "description": "瀹炵幇鍝嶅簲璇︽儏寮圭獥锛堝熀鏈粺璁°€佹绱㈢粺璁°€佹枃妗ｈ鎯咃級骞舵彁渚涙墦寮€鍏ュ彛銆?,
+    "description": "Implement a response detail modal (basic stats, retrieval stats, document details) and provide an entry point to open it.",
     "acceptance_criteria": [
-      "寮圭獥鍙€氳繃鏄庣‘鍏ュ彛鎵撳紑",
-      "灞曠ず鍐呭鏉ヨ嚜娴佸紡 info 浜嬩欢",
-      "鍏抽棴琛屼负姝ｅ父涓斾笉褰卞搷瀵硅瘽鐘舵€?
+      "The modal opens via a clear entry point.",
+      "Displayed content comes from streaming info events.",
+      "Closing behavior is normal and does not affect chat state."
     ],
     "passes": false
   },
@@ -124,11 +123,11 @@
     "id": "F-011",
     "category": "integration",
     "priority": "medium",
-    "description": "瀹炵幇浜戠瓒呮椂鍥為€€绛栫暐涓庨敊璇俊鎭垎绾у睍绀猴紙鑷姩妯″紡鍥為€€锛屾湰鍦?浜戠鎵嬪姩妯″紡鎻愮ず锛夈€?,
+    "description": "Implement cloud-timeout fallback strategy and graded error messaging (auto-mode fallback, prompts for manual local/cloud modes).",
     "acceptance_criteria": [
-      "鑷姩妯″紡瓒呮椂鏃朵細鎵ц鍙鍥為€€",
-      "鎵嬪姩浜戠妯″紡澶辫触涓嶅己鍒跺洖閫€骞剁粰鍑哄缓璁?,
-      "閿欒淇℃伅涓嶆硠闇叉棤鍏冲爢鏍堢粏鑺傜粰鏅€氱敤鎴?
+      "Timeouts in auto mode trigger a visible fallback.",
+      "Manual cloud mode failures do not force fallback and provide guidance.",
+      "Error messages do not expose irrelevant stack details to regular users."
     ],
     "passes": false
   },
@@ -136,11 +135,11 @@
     "id": "F-012",
     "category": "ui",
     "priority": "medium",
-    "description": "瀹屾垚绾?CSS 椋庢牸浣撶郴锛屼繚鐣欏姛鑳芥€т俊鎭瘑搴﹀苟閫傞厤绉诲姩绔€?,
+    "description": "Complete a pure-CSS style system while preserving functional information density and usability.",
     "acceptance_criteria": [
-      "鏍稿績椤甸潰鍦ㄦ闈笌绉诲姩绔潎鍙敤",
-      "杈撳叆鍖恒€佹秷鎭尯銆佷晶鏍忓湪灏忓睆涓嶉伄鎸″叧閿搷浣?,
-      "鏍峰紡涓嶄緷璧?Tailwind锛屼粎浣跨敤 CSS 鏂囦欢"
+      "Core pages are usable on both desktop and mobile.",
+      "Input area, message area, and sidebar do not block key actions on small screens.",
+      "Styles do not depend on Tailwind; only CSS files are used."
     ],
     "passes": false
   },
@@ -148,11 +147,11 @@
     "id": "F-013",
     "category": "qa",
     "priority": "medium",
-    "description": "寤虹珛鍓嶇鍥炲綊妫€鏌ユ竻鍗曪紝瑕嗙洊涓昏亰澶╂牳蹇冩祦绋嬩笌寮傚父娴佺▼銆?,
+    "description": "Establish a frontend regression checklist covering core chat flows and exception flows.",
     "acceptance_criteria": [
-      "鍖呭惈鑷姩/浜戠/鏈湴涓夌妯″紡娴嬭瘯椤?,
-      "鍖呭惈闅愮銆佸鏉傚害銆佺綉缁滃埛鏂般€佹祦寮忎腑鏂瓑娴嬭瘯椤?,
-      "娓呭崟鍙鐢ㄥ苟鍙湪 session 涓紩鐢?
+      "Includes test items for auto/cloud/local modes.",
+      "Includes test items for privacy, complexity, network refresh, and streaming interruption.",
+      "The checklist is reusable and can be referenced in session records."
     ],
     "passes": false
   },
@@ -160,11 +159,11 @@
     "id": "F-014",
     "category": "docs",
     "priority": "low",
-    "description": "琛ュ厖 React 鍓嶇杩愯涓庢帓闅滄枃妗ｏ紝鏄庣‘ nvm + npm 浣跨敤鏂瑰紡銆?,
+    "description": "Add React frontend runbook and troubleshooting documentation, including explicit nvm + npm usage.",
     "acceptance_criteria": [
-      "鏂囨。鍖呭惈 nvm use 20 鍜?npm install/npm run dev",
-      "鏂囨。鍖呭惈甯歌鎶ラ敊涓庢帓鏌ユ楠?,
-      "鏂囨。涓庡疄闄呯洰褰曠粨鏋勪繚鎸佷竴鑷?
+      "Documentation includes nvm use 20 and npm install/npm run dev.",
+      "Documentation includes common errors and troubleshooting steps.",
+      "Documentation stays consistent with the actual directory structure."
     ],
     "passes": false
   }

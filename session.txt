@@ -1,11 +1,11 @@
 # Session History
 
-(Coding agents will append session records here)
+(Coding agents append session records here.)
 
 ## Session 1 - 2026-04-20
-- Feature: 初始化 workflow 协作文件（PROJECT.md / feature_list.json / session.txt / init.sh / docs.md）
+- Feature: Initialize workflow collaboration files (PROJECT.md / feature_list.json / session.txt / init.sh / docs.md)
 - Status: completed
-- Changes: 为现有项目建立多会话协作基础文件，明确 React 重写目标与执行规范
+- Changes: Created baseline multi-session workflow files and clarified the React rewrite target and execution rules.
 - File changes:
   - Added: PROJECT.md
   - Added: feature_list.json
@@ -13,22 +13,23 @@
   - Added: init.sh
   - Added: docs.md
   - Added: .gitignore
-- Notes: 已根据用户要求在 init.sh 中加入 nvm Node 20 切换逻辑；旧前端保留，不纳入删除计划
+- Notes: Added Node 20 switching logic in init.sh via nvm per user request. Legacy frontend remains preserved and is not in deletion scope.
 
 ## Session 2 - 2026-04-20
-- Feature: 创建 react-frontend 脚手架并完成 Vite + React + TypeScript + Axios + Ant Design 初始化（F-001）
+- Feature: Create react-frontend scaffold and initialize Vite + React + TypeScript + Axios + Ant Design (F-001)
 - Status: completed
-- Changes: 完成新前端目录创建、依赖安装、基础目录结构搭建与最小可运行页面骨架；通过 5173 启动与 build 构建验证
+- Changes: Created new frontend workspace, installed dependencies, built base folder structure, and delivered a minimal runnable page skeleton. Verified startup on port 5173 and successful production build.
 - File changes:
   - Added: react-frontend/
   - Modified: feature_list.json - set F-001 passes to true
-  - Modified: session.txt - append current session record
-  - Modified: docs.md - add F-001 scaffold implementation notes
-- Notes: 在当前环境下直接执行 init.sh 受 shell 权限限制，已通过等价命令完成 Node 20 切换与前端验证
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-001 delivery notes
+- Notes: Direct init.sh execution was blocked by shell permissions in the current environment, so equivalent commands were used for Node 20 switching and verification.
+
 ## Session 3 - 2026-04-20
-- Feature: 实现主聊天页面布局（左侧控制区 + 右侧聊天区）（F-002）
+- Feature: Implement main chat page layout (left control panel + right chat panel) (F-002)
 - Status: completed
-- Changes: 完成桌面端主聊天页结构，包含模型选择、网络状态、设置区、隐私管理区、聊天区及输入发送交互
+- Changes: Implemented desktop main chat layout including model selection, network status, settings section, privacy management section, chat area, and send-input interaction.
 - File changes:
   - Added: react-frontend/src/components/chat/types.ts
   - Added: react-frontend/src/components/chat/ModelSelectorSection.tsx
@@ -37,9 +38,9 @@
   - Added: react-frontend/src/components/chat/PrivacySection.tsx
   - Added: react-frontend/src/components/chat/ChatMessageList.tsx
   - Added: react-frontend/src/components/chat/ChatComposer.tsx
-  - Modified: react-frontend/src/pages/ChatPage.tsx - assemble desktop layout and page state
+  - Modified: react-frontend/src/pages/ChatPage.tsx - assembled desktop layout and page state
   - Modified: react-frontend/src/styles/chat-page.css - desktop two-column styling
   - Modified: feature_list.json - set F-002 passes to true
-  - Modified: session.txt - append current session record
-  - Modified: docs.md - add F-002 delivery notes
-- Notes: 本轮按用户确认范围实现桌面端布局，不包含移动端适配
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-002 delivery notes
+- Notes: Implemented desktop-only layout per explicit user confirmation; mobile adaptation was intentionally out of scope for this delivery.
