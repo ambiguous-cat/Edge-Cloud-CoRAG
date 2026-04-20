@@ -64,3 +64,16 @@
   - Modified: session.txt - appended session record
   - Modified: docs.md - added F-003 delivery notes
 - Notes: `init.sh` remained non-runnable in this shell due Bash permission constraints (`E_ACCESSDENIED`), so equivalent frontend verification was performed via `npm run lint` and `npm run build`.
+
+## Session 5 - 2026-04-20
+- Feature: Implement streaming chat incremental rendering compatible with /rag_chat event format (F-004)
+- Status: completed
+- Changes: Implemented frontend SSE stream parsing and incremental assistant rendering, supported content/info/error/done event handling, and added readable timeout/interruption feedback with partial-content preservation when stream fails mid-way.
+- File changes:
+  - Modified: react-frontend/src/services/chatService.ts - added stream parser, event normalization, HTTP/network/timeout/unexpected-end error handling, and inactivity timeout guard
+  - Modified: react-frontend/src/services/index.ts - exported stream API and event/error types
+  - Modified: react-frontend/src/pages/ChatPage.tsx - switched send flow to stream consumption and incremental UI updates
+  - Modified: feature_list.json - set F-004 passes to true
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-004 delivery notes
+- Notes: Current fallback behavior preserves already streamed text and appends interruption diagnostics instead of overwriting full content.

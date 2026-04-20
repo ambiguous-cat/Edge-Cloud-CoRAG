@@ -45,7 +45,7 @@
       "The client recognizes content/info/error/done events.",
       "Users receive readable error feedback when network interruption happens."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-005",

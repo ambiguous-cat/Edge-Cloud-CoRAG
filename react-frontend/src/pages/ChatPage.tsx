@@ -13,15 +13,15 @@ import type {
   SettingsState,
 } from '../components/chat/types'
 import {
-  ApiClientError,
+  RagStreamError,
   fetchApiHealthSnapshot,
-  sendRagChat,
+  streamRagChat,
   type RouteMode,
 } from '../services'
 import '../styles/chat-page.css'
 
 const { Sider, Content } = Layout
-const { Title } = Typography
+const { Title, Text } = Typography
 
 const INITIAL_SETTINGS: SettingsState = {
   similarityThreshold: 0.75,
@@ -37,8 +37,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'assistant-0',
     role: 'assistant',
-    content:
-      '欢迎使用端云协同 RAG 聊天系统，当前前端已接入统一 API 服务层。',
+    content: '欢迎使用端云协同 RAG 聊天系统，当前前端已支持流式增量输出。',
     createdAt: '09:30:00',
   },
 ]
@@ -64,16 +63,33 @@ function buildHistory(messages: ChatMessage[]) {
 }
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    const targetLabel = error.target === 'local' ? '本地' : '云端'
-    return `${error.message}（来源：${targetLabel}）`
+  if (error instanceof RagStreamError) {
+    return error.message
   }
 
   if (error instanceof Error && error.message.trim()) {
-    return '系统异常，请稍后重试。'
+    return `请求失败：${error.message}`
   }
 
-  return '发送请求失败。'
+  return '请求失败，请稍后重试。'
+}
+
+function toStreamInfoText(
+  responseTime?: number,
+  charCount?: number,
+  chunkCount?: number,
+) {
+  const parts: string[] = []
+  if (responseTime !== undefined) {
+    parts.push(`首字响应 ${responseTime.toFixed(2)} 秒`)
+  }
+  if (charCount !== undefined) {
+    parts.push(`输出 ${charCount} 字`)
+  }
+  if (chunkCount !== undefined) {
+    parts.push(`分片 ${chunkCount}`)
+  }
+  return parts.length > 0 ? `流式统计：${parts.join('，')}` : ''
 }
 
 export function ChatPage() {
@@ -91,6 +107,7 @@ export function ChatPage() {
   const [privacyStatusText, setPrivacyStatusText] = useState<string>('')
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [composerText, setComposerText] = useState<string>('')
+  const [streamInfoText, setStreamInfoText] = useState<string>('')
   const [isSending, setIsSending] = useState<boolean>(false)
 
   const canSend = useMemo(
@@ -143,32 +160,80 @@ export function ChatPage() {
     const pendingAssistantMessage: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
-      content: '正在发送请求...',
+      content: '',
       createdAt: nowTime(),
     }
 
     const history = buildHistory([...messages, userMessage])
+    const routeMode = toRouteMode(model)
 
     setMessages((current) => [...current, userMessage, pendingAssistantMessage])
     setComposerText('')
+    setStreamInfoText('')
     setIsSending(true)
 
+    let receivedContent = false
+    let receivedDone = false
+    let serverErrorMessage = ''
+
     try {
-      const response = await sendRagChat({
+      for await (const event of streamRagChat({
         query: content,
-        routeMode: toRouteMode(model),
+        routeMode,
         topK: settings.retrievalCount,
         similarityThreshold: settings.similarityThreshold,
         history,
-      })
+      })) {
+        if (event.type === 'content') {
+          if (!event.content) {
+            continue
+          }
 
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === assistantMessageId
-            ? { ...message, content: response, createdAt: nowTime() }
-            : message,
-        ),
-      )
+          receivedContent = true
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, content: `${message.content}${event.content}` }
+                : message,
+            ),
+          )
+          continue
+        }
+
+        if (event.type === 'info') {
+          setStreamInfoText(
+            toStreamInfoText(event.responseTime, event.charCount, event.chunkCount),
+          )
+          continue
+        }
+
+        if (event.type === 'error') {
+          serverErrorMessage = event.content || '服务端返回错误。'
+          break
+        }
+
+        if (event.type === 'done') {
+          receivedDone = true
+        }
+      }
+
+      if (serverErrorMessage) {
+        throw new Error(serverErrorMessage)
+      }
+
+      if (!receivedDone) {
+        throw new Error('未收到完成事件，流式响应可能已中断。')
+      }
+
+      if (!receivedContent) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, content: '（本次回答无文本内容）' }
+              : message,
+          ),
+        )
+      }
     } catch (error) {
       const errorMessage = getErrorMessage(error)
       setMessages((current) =>
@@ -176,12 +241,16 @@ export function ChatPage() {
           message.id === assistantMessageId
             ? {
                 ...message,
-                content: `请求失败：${errorMessage}`,
+                content:
+                  message.content.trim().length > 0
+                    ? `${message.content}\n\n[流式中断] ${errorMessage}`
+                    : errorMessage,
                 createdAt: nowTime(),
               }
             : message,
         ),
       )
+      setStreamInfoText('')
     } finally {
       setIsSending(false)
     }
@@ -228,6 +297,7 @@ export function ChatPage() {
             <Title level={4} className="chat-area__title">
               聊天区
             </Title>
+            {streamInfoText ? <Text type="secondary">{streamInfoText}</Text> : null}
           </div>
 
           <ChatMessageList messages={messages} />

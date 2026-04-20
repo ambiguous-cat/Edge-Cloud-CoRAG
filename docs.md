@@ -131,3 +131,23 @@ Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
 - URL hardcoding in frontend request code was centralized under `src/services/apiConfig.ts` and client modules
+
+## 10. F-004 Delivery Notes (2026-04-20)
+
+- Added streaming chat API in `src/services/chatService.ts`
+  - Uses `stream: true` with `/rag_chat`
+  - Parses SSE blocks (`data: ...`) incrementally
+  - Normalizes events to four client-level types: `content`, `info`, `error`, `done`
+- Updated chat page send flow in `src/pages/ChatPage.tsx`
+  - Uses `for await` over stream events
+  - Appends `content` chunks incrementally to the latest assistant message
+  - Recognizes and displays `info` statistics
+  - Handles `error` and `done` events explicitly
+- Added interruption safety
+  - Detects unexpected stream termination when terminal event is missing
+  - Adds inactivity timeout guard (not only first-chunk timeout)
+  - Preserves already streamed content and appends interruption diagnostics
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded
