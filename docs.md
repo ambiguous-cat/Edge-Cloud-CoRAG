@@ -151,3 +151,25 @@ Verification:
 Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
+
+## 11. F-005 Delivery Notes (2026-04-22)
+
+- Added routing decision service in `react-frontend/src/services/routingService.ts`
+  - Supports auto/manual mode routing outputs
+  - Supports toggle-controlled checks for cache/network/privacy/complexity
+  - Supports fallback target calculation based on availability
+- Updated chat send flow in `react-frontend/src/pages/ChatPage.tsx`
+  - Calls routing decision before request dispatch
+  - Shows route reason/status in chat header
+  - In auto mode, retries with fallback target when recoverable stream failures occur
+- Updated request layer in `react-frontend/src/services/chatService.ts`
+  - Added optional `target` override so routing decisions can force local/cloud per request
+  - Kept existing mode-based resolution as backward-compatible fallback
+- Added routing exports in `react-frontend/src/services/index.ts`
+
+Warning fix completed:
+- Converted stream error-event handling to throw `RagStreamError` (instead of plain `Error`) so auto-mode fallback conditions are correctly matched.
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded

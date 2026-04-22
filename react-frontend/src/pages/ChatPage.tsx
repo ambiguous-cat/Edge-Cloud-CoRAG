@@ -14,9 +14,13 @@ import type {
 } from '../components/chat/types'
 import {
   RagStreamError,
+  decideRoute,
   fetchApiHealthSnapshot,
+  rememberRouteDecision,
   streamRagChat,
+  type ApiTarget,
   type RouteMode,
+  type RoutingDecision,
 } from '../services'
 import '../styles/chat-page.css'
 
@@ -41,6 +45,13 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     createdAt: '09:30:00',
   },
 ]
+
+const RECOVERABLE_STREAM_ERROR_CODES = new Set([
+  'http',
+  'network',
+  'timeout',
+  'unexpected_end',
+])
 
 function nowTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour12: false })
@@ -74,6 +85,38 @@ function getErrorMessage(error: unknown): string {
   return '请求失败，请稍后重试。'
 }
 
+function shouldRetryInAutoMode(routeMode: RouteMode, error: unknown): boolean {
+  if (routeMode !== 'auto') {
+    return false
+  }
+
+  if (!(error instanceof RagStreamError)) {
+    return false
+  }
+
+  return RECOVERABLE_STREAM_ERROR_CODES.has(error.code)
+}
+
+function toTargetLabel(target: ApiTarget): string {
+  return target === 'local' ? '本地' : '云端'
+}
+
+function toRouteStatusText(decision: RoutingDecision): string {
+  const details: string[] = []
+  details.push(`路由：${toTargetLabel(decision.target)}`)
+  details.push(`原因：${decision.reasonLabel}`)
+
+  if (decision.privacyScore !== undefined) {
+    details.push(`隐私分：${decision.privacyScore.toFixed(2)}`)
+  }
+
+  if (decision.complexityScore !== undefined) {
+    details.push(`复杂度：${decision.complexityScore.toFixed(2)}`)
+  }
+
+  return details.join(' ｜ ')
+}
+
 function toStreamInfoText(
   responseTime?: number,
   charCount?: number,
@@ -92,6 +135,12 @@ function toStreamInfoText(
   return parts.length > 0 ? `流式统计：${parts.join('，')}` : ''
 }
 
+interface StreamConsumeResult {
+  receivedContent: boolean
+  receivedDone: boolean
+  serverErrorMessage: string
+}
+
 export function ChatPage() {
   const [model, setModel] = useState<ModelOption>('auto')
   const [networkStatus, setNetworkStatus] = useState<NetworkState>({
@@ -107,6 +156,7 @@ export function ChatPage() {
   const [privacyStatusText, setPrivacyStatusText] = useState<string>('')
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [composerText, setComposerText] = useState<string>('')
+  const [routeStatusText, setRouteStatusText] = useState<string>('')
   const [streamInfoText, setStreamInfoText] = useState<string>('')
   const [isSending, setIsSending] = useState<boolean>(false)
 
@@ -150,6 +200,7 @@ export function ChatPage() {
     }
 
     const content = composerText.trim()
+    const routeMode = toRouteMode(model)
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -165,21 +216,39 @@ export function ChatPage() {
     }
 
     const history = buildHistory([...messages, userMessage])
-    const routeMode = toRouteMode(model)
 
     setMessages((current) => [...current, userMessage, pendingAssistantMessage])
     setComposerText('')
+    setRouteStatusText('')
     setStreamInfoText('')
     setIsSending(true)
 
-    let receivedContent = false
-    let receivedDone = false
-    let serverErrorMessage = ''
+    const appendAssistantError = (errorMessage: string) => {
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                content:
+                  message.content.trim().length > 0
+                    ? `${message.content}\n\n[流式中断] ${errorMessage}`
+                    : errorMessage,
+                createdAt: nowTime(),
+              }
+            : message,
+        ),
+      )
+    }
 
-    try {
+    const consumeStream = async (target: ApiTarget): Promise<StreamConsumeResult> => {
+      let receivedContent = false
+      let receivedDone = false
+      let serverErrorMessage = ''
+
       for await (const event of streamRagChat({
         query: content,
         routeMode,
+        target,
         topK: settings.retrievalCount,
         similarityThreshold: settings.similarityThreshold,
         history,
@@ -217,15 +286,48 @@ export function ChatPage() {
         }
       }
 
-      if (serverErrorMessage) {
-        throw new Error(serverErrorMessage)
+      return {
+        receivedContent,
+        receivedDone,
+        serverErrorMessage,
+      }
+    }
+
+    let routeDecision: RoutingDecision | null = null
+
+    try {
+      routeDecision = await decideRoute({
+        routeMode,
+        query: content,
+        history,
+        settings: {
+          enableCacheCheck: settings.enableCacheCheck,
+          enableNetworkCheck: settings.enableNetworkCheck,
+          enableComplexityCheck: settings.enableComplexityCheck,
+          enablePrivacyCheck: settings.enablePrivacyCheck,
+          complexityThreshold: settings.complexityThreshold,
+        },
+      })
+
+      setRouteStatusText(toRouteStatusText(routeDecision))
+
+      const primaryResult = await consumeStream(routeDecision.target)
+      if (primaryResult.serverErrorMessage) {
+        throw new RagStreamError(
+          primaryResult.serverErrorMessage,
+          'network',
+          routeDecision.target,
+        )
+      }
+      if (!primaryResult.receivedDone) {
+        throw new RagStreamError(
+          '未收到完成事件，流式响应可能已中断。',
+          'unexpected_end',
+          routeDecision.target,
+        )
       }
 
-      if (!receivedDone) {
-        throw new Error('未收到完成事件，流式响应可能已中断。')
-      }
-
-      if (!receivedContent) {
+      if (!primaryResult.receivedContent) {
         setMessages((current) =>
           current.map((message) =>
             message.id === assistantMessageId
@@ -234,23 +336,67 @@ export function ChatPage() {
           ),
         )
       }
+
+      rememberRouteDecision(content, routeDecision.target)
     } catch (error) {
-      const errorMessage = getErrorMessage(error)
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === assistantMessageId
-            ? {
-                ...message,
-                content:
-                  message.content.trim().length > 0
-                    ? `${message.content}\n\n[流式中断] ${errorMessage}`
-                    : errorMessage,
-                createdAt: nowTime(),
-              }
-            : message,
-        ),
-      )
-      setStreamInfoText('')
+      const canFallback =
+        routeDecision !== null &&
+        routeDecision.fallbackTarget !== undefined &&
+        routeDecision.fallbackTarget !== routeDecision.target &&
+        shouldRetryInAutoMode(routeMode, error)
+
+      if (canFallback && routeDecision && routeDecision.fallbackTarget) {
+        const fallbackTarget = routeDecision.fallbackTarget
+        setRouteStatusText(
+          `主路由失败，已回退到${toTargetLabel(fallbackTarget)}继续处理`,
+        )
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  content:
+                    message.content.trim().length > 0
+                      ? `${message.content}\n\n[自动回退] 主路由中断，切换到${toTargetLabel(
+                          fallbackTarget,
+                        )}重试。`
+                      : `[自动回退] 主路由中断，切换到${toTargetLabel(
+                          fallbackTarget,
+                        )}重试。`,
+                }
+              : message,
+          ),
+        )
+
+        try {
+          const fallbackResult = await consumeStream(fallbackTarget)
+          if (fallbackResult.serverErrorMessage) {
+            throw new RagStreamError(
+              fallbackResult.serverErrorMessage,
+              'network',
+              fallbackTarget,
+            )
+          }
+          if (!fallbackResult.receivedDone) {
+            throw new RagStreamError(
+              '回退路由未收到完成事件，流式响应可能已中断。',
+              'unexpected_end',
+              fallbackTarget,
+            )
+          }
+          if (!fallbackResult.receivedContent) {
+            appendAssistantError('回退路由无可用响应，请稍后重试。')
+          } else {
+            rememberRouteDecision(content, fallbackTarget)
+          }
+        } catch (fallbackError) {
+          appendAssistantError(getErrorMessage(fallbackError))
+          setStreamInfoText('')
+        }
+      } else {
+        appendAssistantError(getErrorMessage(error))
+        setStreamInfoText('')
+      }
     } finally {
       setIsSending(false)
     }
@@ -297,6 +443,7 @@ export function ChatPage() {
             <Title level={4} className="chat-area__title">
               聊天区
             </Title>
+            {routeStatusText ? <Text type="secondary">{routeStatusText}</Text> : null}
             {streamInfoText ? <Text type="secondary">{streamInfoText}</Text> : null}
           </div>
 

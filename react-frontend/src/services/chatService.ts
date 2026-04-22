@@ -15,6 +15,7 @@ export interface ChatHistoryMessage {
 export interface SendRagChatRequest {
   query: string
   routeMode: RouteMode
+  target?: ApiTarget
   topK: number
   similarityThreshold: number
   history: ChatHistoryMessage[]
@@ -241,11 +242,12 @@ async function readErrorDetail(response: Response): Promise<string | null> {
 export async function sendRagChat({
   query,
   routeMode,
+  target,
   topK,
   similarityThreshold,
   history,
 }: SendRagChatRequest): Promise<string> {
-  const target = resolveApiTarget(routeMode)
+  const resolvedTarget = target ?? resolveApiTarget(routeMode)
   const payload = {
     query,
     top_k: normalizeTopK(topK),
@@ -254,7 +256,7 @@ export async function sendRagChat({
     similarity_threshold: similarityThreshold,
   }
 
-  const { data } = await getHttpClient(target).post<RagChatResponse>(
+  const { data } = await getHttpClient(resolvedTarget).post<RagChatResponse>(
     '/rag_chat',
     payload,
   )
@@ -269,11 +271,12 @@ export async function sendRagChat({
 export async function* streamRagChat({
   query,
   routeMode,
+  target,
   topK,
   similarityThreshold,
   history,
 }: SendRagChatRequest): AsyncGenerator<RagStreamEvent> {
-  const target = resolveApiTarget(routeMode)
+  const resolvedTarget = target ?? resolveApiTarget(routeMode)
   const controller = new AbortController()
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutPhase: 'first_chunk' | 'inactivity' = 'first_chunk'
@@ -303,7 +306,7 @@ export async function* streamRagChat({
   try {
     armTimeout('first_chunk')
 
-    const response = await fetch(`${getApiBaseUrl(target)}/rag_chat`, {
+    const response = await fetch(`${getApiBaseUrl(resolvedTarget)}/rag_chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -318,11 +321,11 @@ export async function* streamRagChat({
       const message = detail
         ? `请求失败（${response.status}）：${detail}`
         : `请求失败，状态码 ${response.status}。`
-      throw new RagStreamError(message, 'http', target, response.status)
+      throw new RagStreamError(message, 'http', resolvedTarget, response.status)
     }
 
     if (!response.body) {
-      throw new RagStreamError('未收到流式响应数据。', 'network', target)
+      throw new RagStreamError('未收到流式响应数据。', 'network', resolvedTarget)
     }
 
     reader = response.body.getReader()
@@ -347,7 +350,7 @@ export async function* streamRagChat({
           continue
         }
 
-        const payloadEvent = parseStreamPayload(dataLine, target)
+        const payloadEvent = parseStreamPayload(dataLine, resolvedTarget)
         for (const event of normalizeEvents(payloadEvent)) {
           if (event.type === 'done') {
             gotTerminalEvent = true
@@ -360,7 +363,7 @@ export async function* streamRagChat({
     buffer += decoder.decode()
     const tailDataLine = extractDataLine(buffer)
     if (tailDataLine) {
-      const payloadEvent = parseStreamPayload(tailDataLine, target)
+      const payloadEvent = parseStreamPayload(tailDataLine, resolvedTarget)
       for (const event of normalizeEvents(payloadEvent)) {
         if (event.type === 'done') {
           gotTerminalEvent = true
@@ -373,7 +376,7 @@ export async function* streamRagChat({
       throw new RagStreamError(
         '流式响应在完成前中断，请重试。',
         'unexpected_end',
-        target,
+        resolvedTarget,
       )
     }
   } catch (error) {
@@ -389,7 +392,7 @@ export async function* streamRagChat({
       throw new RagStreamError(
         message,
         'timeout',
-        target,
+        resolvedTarget,
         undefined,
         error,
       )
@@ -399,17 +402,23 @@ export async function* streamRagChat({
       throw new RagStreamError(
         '网络连接中断，请检查服务状态后重试。',
         'network',
-        target,
+        resolvedTarget,
         undefined,
         error,
       )
     }
 
     if (error instanceof Error) {
-      throw new RagStreamError(error.message, 'network', target, undefined, error)
+      throw new RagStreamError(
+        error.message,
+        'network',
+        resolvedTarget,
+        undefined,
+        error,
+      )
     }
 
-    throw new RagStreamError('流式请求失败，请稍后重试。', 'network', target)
+    throw new RagStreamError('流式请求失败，请稍后重试。', 'network', resolvedTarget)
   } finally {
     clearTimeoutGuard()
     if (reader) {

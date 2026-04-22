@@ -77,3 +77,17 @@
   - Modified: session.txt - appended session record
   - Modified: docs.md - added F-004 delivery notes
 - Notes: Current fallback behavior preserves already streamed text and appends interruption diagnostics instead of overwriting full content.
+
+## Session 6 - 2026-04-22
+- Feature: Implement auto/cloud/local routing strategy with detection toggles and auto fallback (F-005)
+- Status: completed
+- Changes: Added routing decision service for cache/network/privacy/complexity checks, wired chat send flow to route decisions and auto fallback, and fixed stream error classification so auto mode can trigger fallback on server-side stream errors.
+- File changes:
+  - Added: react-frontend/src/services/routingService.ts
+  - Modified: react-frontend/src/pages/ChatPage.tsx - integrated route decision display, fallback retry flow, and warning fix for fallback trigger condition
+  - Modified: react-frontend/src/services/chatService.ts - added optional target override for routed requests
+  - Modified: react-frontend/src/services/index.ts - exported routing APIs and types
+  - Modified: feature_list.json - set F-005 passes to true
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-005 delivery notes
+- Notes: `npm run lint` and `npm run build` both passed after the warning fix.

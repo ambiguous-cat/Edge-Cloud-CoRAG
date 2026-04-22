@@ -57,7 +57,7 @@
       "Detection toggles take effect in real time and participate in decisions.",
       "In auto mode, routing can fall back to local or cloud according to strategy."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-006",

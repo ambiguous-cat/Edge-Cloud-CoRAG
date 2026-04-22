@@ -17,3 +17,6 @@ export type {
 
 export { fetchApiHealthSnapshot } from './systemService'
 export type { ApiHealthSnapshot } from './systemService'
+
+export { decideRoute, rememberRouteDecision } from './routingService'
+export type { DecideRouteRequest, RoutingDecision, RoutingSettings } from './routingService'
