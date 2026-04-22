@@ -18,5 +18,7 @@ export type {
 export { fetchApiHealthSnapshot } from './systemService'
 export type { ApiHealthSnapshot } from './systemService'
 
+export { createPrivacyKeyword, fetchPrivacyKeywords } from './privacyService'
+
 export { decideRoute, rememberRouteDecision } from './routingService'
 export type { DecideRouteRequest, RoutingDecision, RoutingSettings } from './routingService'

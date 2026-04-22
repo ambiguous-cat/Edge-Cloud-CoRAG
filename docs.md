@@ -196,3 +196,24 @@ Known warning (recorded from review):
 Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
+
+## 13. F-007 Delivery Notes (2026-04-22)
+
+- Added privacy keyword service in `react-frontend/src/services/privacyService.ts`
+  - `fetchPrivacyKeywords()` calls `GET /privacy/keywords`
+  - `createPrivacyKeyword()` calls `POST /privacy/keywords/add`
+- Updated chat page privacy flow in `react-frontend/src/pages/ChatPage.tsx`
+  - Loads privacy keyword list on page initialization
+  - Submits new keyword to backend and refreshes keyword list after success
+  - Shows readable status text for both success and failure cases
+- Updated privacy panel interactions in `react-frontend/src/components/chat/PrivacySection.tsx`
+  - Added loading state for add/refresh actions
+  - Prevented conflicting operations by disabling related controls during requests
+- Updated service exports in `react-frontend/src/services/index.ts`
+
+Warning fix from review:
+- Added explicit `success === true` validation in privacy service responses before marking add/list calls as successful.
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded

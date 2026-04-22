@@ -13,9 +13,12 @@ import type {
   SettingsState,
 } from '../components/chat/types'
 import {
+  ApiClientError,
   RagStreamError,
+  createPrivacyKeyword,
   decideRoute,
   fetchApiHealthSnapshot,
+  fetchPrivacyKeywords,
   rememberRouteDecision,
   streamRagChat,
   type ApiTarget,
@@ -174,6 +177,18 @@ function getErrorMessage(error: unknown): string {
   return '请求失败，请稍后重试。'
 }
 
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiClientError) {
+    return error.message
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
+  }
+
+  return fallback
+}
+
 function shouldRetryInAutoMode(routeMode: RouteMode, error: unknown): boolean {
   if (routeMode !== 'auto') {
     return false
@@ -243,8 +258,10 @@ export function ChatPage() {
     loadSettingsFromSession(),
   )
   const [keywordInput, setKeywordInput] = useState<string>('')
-  const [keywords, setKeywords] = useState<string[]>(['身份证号', '手机号'])
+  const [keywords, setKeywords] = useState<string[]>([])
   const [privacyStatusText, setPrivacyStatusText] = useState<string>('')
+  const [isPrivacyAdding, setIsPrivacyAdding] = useState<boolean>(false)
+  const [isPrivacyRefreshing, setIsPrivacyRefreshing] = useState<boolean>(false)
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [composerText, setComposerText] = useState<string>('')
   const [routeStatusText, setRouteStatusText] = useState<string>('')
@@ -276,7 +293,40 @@ export function ChatPage() {
     })
   }, [])
 
-  const addPrivacyKeyword = () => {
+  const refreshPrivacyKeywords = useCallback(
+    async (customSuccessMessage?: string) => {
+      setIsPrivacyRefreshing(true)
+      setPrivacyStatusText('正在刷新关键词列表...')
+
+      try {
+        const nextKeywords = await fetchPrivacyKeywords()
+        setKeywords(nextKeywords)
+        setPrivacyStatusText(
+          customSuccessMessage ??
+            `关键词列表已刷新，共 ${nextKeywords.length} 项（${nowTime()}）。`,
+        )
+      } catch (error) {
+        setPrivacyStatusText(
+          `刷新失败：${getApiErrorMessage(error, '请检查本地服务后重试。')}`,
+        )
+      } finally {
+        setIsPrivacyRefreshing(false)
+      }
+    },
+    [],
+  )
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      void refreshPrivacyKeywords()
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [refreshPrivacyKeywords])
+
+  const addPrivacyKeyword = async () => {
     const trimmed = keywordInput.trim()
     if (!trimmed) {
       setPrivacyStatusText('请输入关键词后再提交。')
@@ -288,13 +338,22 @@ export function ChatPage() {
       return
     }
 
-    setKeywords((current) => [...current, trimmed])
-    setKeywordInput('')
-    setPrivacyStatusText(`已新增关键词：${trimmed}`)
+    setIsPrivacyAdding(true)
+    try {
+      const successMessage = await createPrivacyKeyword(trimmed)
+      setKeywordInput('')
+      await refreshPrivacyKeywords(`${successMessage}（${nowTime()}）`)
+    } catch (error) {
+      setPrivacyStatusText(
+        `新增失败：${getApiErrorMessage(error, '请检查服务状态后重试。')}`,
+      )
+    } finally {
+      setIsPrivacyAdding(false)
+    }
   }
 
-  const refreshPrivacyKeywords = () => {
-    setPrivacyStatusText(`关键词列表已刷新（${nowTime()}）。`)
+  const handleRefreshPrivacyKeywords = () => {
+    void refreshPrivacyKeywords()
   }
 
   const sendMessage = async () => {
@@ -532,10 +591,12 @@ export function ChatPage() {
             keywordInput={keywordInput}
             keywords={keywords}
             statusText={privacyStatusText}
+            addingKeyword={isPrivacyAdding}
+            refreshingKeywords={isPrivacyRefreshing}
             onToggle={() => setPrivacyOpen((current) => !current)}
             onKeywordInputChange={setKeywordInput}
-            onAddKeyword={addPrivacyKeyword}
-            onRefreshKeywords={refreshPrivacyKeywords}
+            onAddKeyword={() => void addPrivacyKeyword()}
+            onRefreshKeywords={handleRefreshPrivacyKeywords}
           />
         </div>
       </Sider>

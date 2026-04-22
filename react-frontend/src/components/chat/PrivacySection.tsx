@@ -7,6 +7,8 @@ interface PrivacySectionProps {
   keywordInput: string
   keywords: string[]
   statusText: string
+  addingKeyword: boolean
+  refreshingKeywords: boolean
   onToggle: () => void
   onKeywordInputChange: (value: string) => void
   onAddKeyword: () => void
@@ -18,6 +20,8 @@ export function PrivacySection({
   keywordInput,
   keywords,
   statusText,
+  addingKeyword,
+  refreshingKeywords,
   onToggle,
   onKeywordInputChange,
   onAddKeyword,
@@ -38,13 +42,21 @@ export function PrivacySection({
           <Input
             value={keywordInput}
             placeholder="输入隐私关键词"
+            disabled={addingKeyword}
             onChange={(event) => onKeywordInputChange(event.target.value)}
           />
           <Space>
-            <Button type="primary" onClick={onAddKeyword}>
+            <Button
+              type="primary"
+              loading={addingKeyword}
+              disabled={refreshingKeywords}
+              onClick={onAddKeyword}
+            >
               新增关键词
             </Button>
-            <Button onClick={onRefreshKeywords}>刷新列表</Button>
+            <Button loading={refreshingKeywords} onClick={onRefreshKeywords}>
+              刷新列表
+            </Button>
           </Space>
           {statusText ? <Text type="secondary">{statusText}</Text> : null}
           <div>

@@ -81,7 +81,7 @@
       "The UI can call /privacy/keywords to fetch and display keyword list.",
       "Both success and failure states provide clear UI feedback."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-008",
