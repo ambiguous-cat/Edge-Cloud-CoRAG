@@ -173,3 +173,26 @@ Warning fix completed:
 Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
+
+## 12. F-006 Delivery Notes (2026-04-22)
+
+- Updated advanced settings behavior in `react-frontend/src/pages/ChatPage.tsx`
+  - Added session-scoped persistence via `sessionStorage` for:
+    - `similarityThreshold`
+    - `retrievalCount`
+    - `complexityThreshold`
+  - Added input normalization when loading persisted values to keep ranges safe.
+- Updated routing linkage in `react-frontend/src/services/routingService.ts`
+  - Complexity decision now includes current `complexityThreshold` in route evaluation flow.
+  - Route reason text now includes both complexity score and threshold to aid debugging.
+
+Known warning (recorded from review):
+- `complexity_threshold` is currently sent by frontend to `/complexity/route`, while backend request model currently only declares `query`.
+- Current behavior relies on backend tolerating unknown fields. If backend is switched to strict extra-field validation in the future, this could return 422 and degrade complexity-route behavior.
+- Recommended follow-up:
+  - Either formally add `complexity_threshold` to backend request model;
+  - Or stop sending this field and keep threshold comparison purely on frontend with returned complexity score.
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded

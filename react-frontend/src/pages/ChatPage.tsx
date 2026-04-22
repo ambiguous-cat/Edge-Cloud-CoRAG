@@ -1,5 +1,5 @@
 import { Layout, Typography } from 'antd'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChatComposer } from '../components/chat/ChatComposer'
 import { ChatMessageList } from '../components/chat/ChatMessageList'
 import { ModelSelectorSection } from '../components/chat/ModelSelectorSection'
@@ -37,6 +37,8 @@ const INITIAL_SETTINGS: SettingsState = {
   enablePrivacyCheck: true,
 }
 
+const SETTINGS_SESSION_KEY = 'rag_settings_v1'
+
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'assistant-0',
@@ -55,6 +57,93 @@ const RECOVERABLE_STREAM_ERROR_CODES = new Set([
 
 function nowTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+function normalizeThreshold(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback
+  }
+
+  if (value < 0) {
+    return 0
+  }
+
+  if (value > 1) {
+    return 1
+  }
+
+  return value
+}
+
+function normalizeRetrievalCount(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback
+  }
+
+  const rounded = Math.round(value)
+  if (rounded < 1) {
+    return 1
+  }
+  if (rounded > 10) {
+    return 10
+  }
+  return rounded
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
+}
+
+function loadSettingsFromSession(): SettingsState {
+  if (typeof window === 'undefined') {
+    return INITIAL_SETTINGS
+  }
+
+  const rawValue = window.sessionStorage.getItem(SETTINGS_SESSION_KEY)
+  if (!rawValue) {
+    return INITIAL_SETTINGS
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return INITIAL_SETTINGS
+    }
+
+    const value = parsed as Record<string, unknown>
+    return {
+      similarityThreshold: normalizeThreshold(
+        value.similarityThreshold,
+        INITIAL_SETTINGS.similarityThreshold,
+      ),
+      retrievalCount: normalizeRetrievalCount(
+        value.retrievalCount,
+        INITIAL_SETTINGS.retrievalCount,
+      ),
+      complexityThreshold: normalizeThreshold(
+        value.complexityThreshold,
+        INITIAL_SETTINGS.complexityThreshold,
+      ),
+      enableCacheCheck: normalizeBoolean(
+        value.enableCacheCheck,
+        INITIAL_SETTINGS.enableCacheCheck,
+      ),
+      enableNetworkCheck: normalizeBoolean(
+        value.enableNetworkCheck,
+        INITIAL_SETTINGS.enableNetworkCheck,
+      ),
+      enableComplexityCheck: normalizeBoolean(
+        value.enableComplexityCheck,
+        INITIAL_SETTINGS.enableComplexityCheck,
+      ),
+      enablePrivacyCheck: normalizeBoolean(
+        value.enablePrivacyCheck,
+        INITIAL_SETTINGS.enablePrivacyCheck,
+      ),
+    }
+  } catch {
+    return INITIAL_SETTINGS
+  }
 }
 
 function toRouteMode(model: ModelOption): RouteMode {
@@ -150,7 +239,9 @@ export function ChatPage() {
   })
   const [settingsOpen, setSettingsOpen] = useState<boolean>(true)
   const [privacyOpen, setPrivacyOpen] = useState<boolean>(true)
-  const [settings, setSettings] = useState<SettingsState>(INITIAL_SETTINGS)
+  const [settings, setSettings] = useState<SettingsState>(() =>
+    loadSettingsFromSession(),
+  )
   const [keywordInput, setKeywordInput] = useState<string>('')
   const [keywords, setKeywords] = useState<string[]>(['身份证号', '手机号'])
   const [privacyStatusText, setPrivacyStatusText] = useState<string>('')
@@ -164,6 +255,18 @@ export function ChatPage() {
     () => composerText.trim().length > 0 && !isSending,
     [composerText, isSending],
   )
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      window.sessionStorage.setItem(SETTINGS_SESSION_KEY, JSON.stringify(settings))
+    } catch {
+      // Ignore storage failures and keep in-memory settings available.
+    }
+  }, [settings])
 
   const refreshNetworkStatus = useCallback(async () => {
     const snapshot = await fetchApiHealthSnapshot()

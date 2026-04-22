@@ -23,6 +23,11 @@ interface ComplexityRouteResponse {
   }
 }
 
+interface ComplexityRouteRequest {
+  query: string
+  complexity_threshold: number
+}
+
 export interface RoutingSettings {
   enableCacheCheck: boolean
   enableNetworkCheck: boolean
@@ -156,11 +161,15 @@ async function evaluatePrivacyRisk(
 
 async function evaluateComplexityRoute(
   query: string,
+  complexityThreshold: number,
 ): Promise<{ target: ApiTarget | null; score?: number }> {
   try {
     const { data } = await getHttpClient('local').post<ComplexityRouteResponse>(
       '/complexity/route',
-      { query },
+      {
+        query,
+        complexity_threshold: complexityThreshold,
+      } satisfies ComplexityRouteRequest,
     )
 
     const routeTarget = normalizeRouteToTarget(data?.routing_result?.route)
@@ -287,15 +296,16 @@ export async function decideRoute({
   }
 
   if (settings.enableComplexityCheck) {
-    const complexity = await evaluateComplexityRoute(query)
+    const complexity = await evaluateComplexityRoute(
+      query,
+      settings.complexityThreshold,
+    )
     let preferredTarget: ApiTarget = 'cloud'
-    if (complexity.target) {
+    if (complexity.score !== undefined) {
+      preferredTarget =
+        complexity.score > settings.complexityThreshold ? 'cloud' : 'local'
+    } else if (complexity.target) {
       preferredTarget = complexity.target
-    } else if (
-      complexity.score !== undefined &&
-      complexity.score < settings.complexityThreshold
-    ) {
-      preferredTarget = 'local'
     }
 
     const actualTarget = chooseByAvailability(
@@ -303,10 +313,14 @@ export async function decideRoute({
       localAvailable,
       cloudAvailable,
     )
+    const scoreDetail =
+      complexity.score !== undefined
+        ? `（复杂度 ${complexity.score.toFixed(2)}，阈值 ${settings.complexityThreshold.toFixed(2)}）`
+        : ''
     const reasonLabel =
       actualTarget === preferredTarget
-        ? `复杂度策略建议${targetLabel(actualTarget)}处理`
-        : buildFallbackReasonLabel(preferredTarget, actualTarget)
+        ? `复杂度策略建议${targetLabel(actualTarget)}处理${scoreDetail}`
+        : `${buildFallbackReasonLabel(preferredTarget, actualTarget)}${scoreDetail}`
     return finalizeDecision(
       actualTarget,
       'complexity_routing',
@@ -338,4 +352,3 @@ export async function decideRoute({
     'auto',
   )
 }
-

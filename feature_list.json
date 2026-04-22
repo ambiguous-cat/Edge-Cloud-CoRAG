@@ -69,7 +69,7 @@
       "The three threshold parameters persist in the current session state.",
       "Parameters are passed correctly to the backend when sending requests."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-007",

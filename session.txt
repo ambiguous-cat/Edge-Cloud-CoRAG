@@ -91,3 +91,15 @@
   - Modified: session.txt - appended session record
   - Modified: docs.md - added F-005 delivery notes
 - Notes: `npm run lint` and `npm run build` both passed after the warning fix.
+
+## Session 7 - 2026-04-22
+- Feature: Implement advanced settings panel persistence and parameter linkage (F-006)
+- Status: completed
+- Changes: Added session-level persistence for advanced settings and linked complexity threshold into auto-routing decision details so threshold changes apply immediately in routing behavior.
+- File changes:
+  - Modified: react-frontend/src/pages/ChatPage.tsx - added sessionStorage load/save and settings normalization
+  - Modified: react-frontend/src/services/routingService.ts - threaded complexity threshold into complexity route evaluation and reason text
+  - Modified: feature_list.json - set F-006 passes to true
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-006 delivery notes and recorded known warning
+- Notes: `npm run lint` and `npm run build` passed; known warning about `complexity_threshold` API protocol compatibility is documented in docs.
