@@ -93,7 +93,7 @@
       "The refresh button actively triggers status updates.",
       "Error scenarios provide readable feedback."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-009",

@@ -1,262 +1,173 @@
+import json
 import os
 import time
+from typing import Dict, Generator, List, Optional
+
 import requests
-import json
 from dotenv import load_dotenv
-from typing import List, Dict, Any, Generator, Optional
 
-load_dotenv()  # 加载.env文件
+load_dotenv()
 
-# 读取配置
-ZHIPU_API_KEY = os.getenv("ZHIPU_API_KEY")
+# Chat config: keep it simple, one URL + one key.
+CHAT_URL = os.getenv("CHAT_API_URL", "https://open.bigmodel.cn/api/paas/v4/chat/completions")
+CHAT_API_KEY = os.getenv("CHAT_API_KEY", "")
 
-# 可用的对话模型
-chat_models = ['glm-4']
-chat_model = chat_models[0]  # 默认使用glm-4
+# Compatibility export for old imports.
+API_KEY = CHAT_API_KEY
 
+DEFAULT_MODEL = os.getenv("CHAT_MODEL", "glm-4")
+CHAT_MODELS = [m.strip() for m in os.getenv("CHAT_MODELS", DEFAULT_MODEL).split(",") if m.strip()]
+DEFAULT_TEMPERATURE = float(os.getenv("CHAT_TEMPERATURE", "0.1"))
+DEFAULT_MAX_TOKENS = int(os.getenv("CHAT_MAX_TOKENS", "500"))
+DEFAULT_TIMEOUT = int(os.getenv("CHAT_TIMEOUT", "30"))
 
-def chat(messages: List[Dict[str, str]], **kwargs) -> str:
-    """
-    统一的对话接口
-    messages: [{"role": "user", "content": "..."}]
-    """
-    if chat_model not in chat_models:
-        raise ValueError(f"不支持的模型: {chat_model}")
-    elif chat_model == 'glm-4':
-        return zhipu_chat(messages, **kwargs)
+chat_models = CHAT_MODELS or [DEFAULT_MODEL]
+chat_model = chat_models[0]
 
 
-def stream_chat(messages: List[Dict[str, str]], **kwargs) -> Generator[str, None, None]:
-    """
-    流式对话接口
-    """
-    if chat_model not in chat_models:
-        raise ValueError(f"不支持的模型: {chat_model}")
-    elif chat_model == 'glm-4':
-        return zhipu_stream_chat(messages, **kwargs)
+def chat(messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs) -> str:
+    return call_chat_completion(messages, model=model or chat_model, **kwargs)
 
 
-# 智谱AI对话模型封装
-def zhipu_chat(messages: List[Dict[str, str]], model: str = "glm-4",
-               api_key: Optional[str] = None, **kwargs) -> str:
-    """
-    调用智谱AI的对话模型
-    """
+def stream_chat(messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs) -> Generator[str, None, None]:
+    return stream_chat_completion(messages, model=model or chat_model, **kwargs)
+
+
+def call_chat_completion(
+    messages: List[Dict[str, str]], model: str = DEFAULT_MODEL, api_key: Optional[str] = None, **kwargs
+) -> str:
     if api_key is None:
-        api_key = ZHIPU_API_KEY
+        api_key = CHAT_API_KEY
     if not api_key:
-        raise ValueError("智谱API密钥未设置")
+        raise ValueError("Chat API key is missing, set CHAT_API_KEY in .env")
 
-    url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-
-    data = {
+    timeout = int(kwargs.pop("timeout", DEFAULT_TIMEOUT))
+    payload = {
         "model": model,
         "messages": messages,
-        "temperature": kwargs.get('temperature', 0.1),  # 降低默认温度
-        "max_tokens": kwargs.get('max_tokens', 500),  # 减少默认token数
-        "stream": False
+        "temperature": kwargs.pop("temperature", DEFAULT_TEMPERATURE),
+        "max_tokens": kwargs.pop("max_tokens", DEFAULT_MAX_TOKENS),
+        "stream": False,
     }
+    payload.update(kwargs)
 
-    # 添加详细的性能监控
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+
     start_time = time.time()
-    dns_time = connection_time = None
+    response = requests.post(CHAT_URL, headers=headers, json=payload, timeout=timeout)
+    response.raise_for_status()
+    result = response.json()
 
-    try:
-        # 使用更短的超时时间
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
+    if "choices" not in result or not result["choices"]:
+        raise ValueError(f"Unexpected API response format: {result}")
 
-        total_time = time.time() - start_time
-        result = response.json()
-
-        if "choices" in result and len(result["choices"]) > 0:
-            content = result["choices"][0]["message"]["content"]
-            print(f"✅ 非流式响应成功 | 总耗时: {total_time:.2f}s | 响应长度: {len(content)}字符")
-            return content
-        else:
-            raise Exception(f"API响应格式异常: {result}")
-
-    except requests.exceptions.Timeout:
-        total_time = time.time() - start_time
-        print(f"❌ 请求超时: {total_time:.2f}秒")
-        raise Exception(f"请求超时 ({total_time:.2f}秒)")
-    except requests.exceptions.RequestException as e:
-        total_time = time.time() - start_time
-        print(f"❌ 请求异常 (耗时{total_time:.2f}s): {e}")
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"状态码: {e.response.status_code}")
-        raise
-    except Exception as e:
-        total_time = time.time() - start_time
-        print(f"❌ 处理异常 (耗时{total_time:.2f}s): {e}")
-        raise
+    content = result["choices"][0]["message"]["content"]
+    print(f"chat ok | elapsed: {time.time() - start_time:.2f}s | chars: {len(content)}")
+    return content
 
 
-def zhipu_stream_chat(messages: List[Dict[str, str]], model: str = "glm-4",
-                      api_key: Optional[str] = None, **kwargs) -> Generator[str, None, None]:
-    """
-    智谱AI流式对话
-    """
+def stream_chat_completion(
+    messages: List[Dict[str, str]], model: str = DEFAULT_MODEL, api_key: Optional[str] = None, **kwargs
+) -> Generator[str, None, None]:
     if api_key is None:
-        api_key = ZHIPU_API_KEY
+        api_key = CHAT_API_KEY
     if not api_key:
-        raise ValueError("智谱API密钥未设置")
+        raise ValueError("Chat API key is missing, set CHAT_API_KEY in .env")
 
-    url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-
-    data = {
+    timeout = int(kwargs.pop("timeout", DEFAULT_TIMEOUT))
+    payload = {
         "model": model,
         "messages": messages,
-        "temperature": kwargs.get('temperature', 0.1),
-        "max_tokens": kwargs.get('max_tokens', 500),
-        "stream": True
+        "temperature": kwargs.pop("temperature", DEFAULT_TEMPERATURE),
+        "max_tokens": kwargs.pop("max_tokens", DEFAULT_MAX_TOKENS),
+        "stream": True,
     }
+    payload.update(kwargs)
+
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     start_time = time.time()
-    first_token_received = False
     first_token_time = None
     content_length = 0
 
-    try:
-        response = requests.post(url, headers=headers, json=data, timeout=30, stream=True)
+    with requests.post(CHAT_URL, headers=headers, json=payload, timeout=timeout, stream=True) as response:
         response.raise_for_status()
-
         for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: '):
-                    data_str = line_str[6:]
-                    if data_str.strip() == '[DONE]':
-                        total_time = time.time() - start_time
-                        print(
-                            f"✅ 流式响应完成 | 首字: {first_token_time:.2f}s | 总耗时: {total_time:.2f}s | 总长度: {content_length}字符")
-                        break
+            if not line:
+                continue
+            line_str = line.decode("utf-8")
+            if not line_str.startswith("data: "):
+                continue
 
-                    try:
-                        chunk = json.loads(data_str)
-                        if "choices" in chunk and len(chunk["choices"]) > 0:
-                            delta = chunk["choices"][0].get("delta", {})
-                            if "content" in delta:
-                                content = delta["content"]
-                                content_length += len(content)
+            data_str = line_str[6:]
+            if data_str.strip() == "[DONE]":
+                total_time = time.time() - start_time
+                first_token_display = first_token_time if first_token_time is not None else total_time
+                print(
+                    f"stream done | first token: {first_token_display:.2f}s | elapsed: {total_time:.2f}s | chars: {content_length}"
+                )
+                break
 
-                                # 记录首字时间
-                                if not first_token_received:
-                                    first_token_received = True
-                                    first_token_time = time.time() - start_time
-                                    print(f"🚀 收到首字: {first_token_time:.2f}s")
+            try:
+                chunk = json.loads(data_str)
+            except json.JSONDecodeError:
+                continue
 
-                                yield content
-                    except json.JSONDecodeError:
-                        continue
+            if "choices" not in chunk or not chunk["choices"]:
+                continue
 
-    except requests.exceptions.Timeout:
-        total_time = time.time() - start_time
-        print(f"❌ 流式请求超时: {total_time:.2f}秒")
-        raise
-    except Exception as e:
-        total_time = time.time() - start_time
-        print(f"❌ 流式处理异常 (耗时{total_time:.2f}s): {e}")
-        raise
+            delta = chunk["choices"][0].get("delta", {})
+            content = delta.get("content")
+            if not content:
+                continue
+
+            if first_token_time is None:
+                first_token_time = time.time() - start_time
+                print(f"first token in {first_token_time:.2f}s")
+
+            content_length += len(content)
+            yield content
 
 
-# 工具函数
 def set_chat_model(model_name: str):
-    """设置当前使用的对话模型"""
     global chat_model
-    if model_name in chat_models:
-        chat_model = model_name
-        print(f"对话模型已切换为: {model_name}")
-    else:
-        raise ValueError(f"不支持的模型: {model_name}，可用模型: {chat_models}")
+    if not model_name or not model_name.strip():
+        raise ValueError("model_name cannot be empty")
+    chat_model = model_name.strip()
+    if chat_model not in chat_models:
+        chat_models.append(chat_model)
+    print(f"chat model switched to: {chat_model}")
 
 
 def get_current_model() -> str:
-    """获取当前使用的对话模型"""
     return chat_model
 
 
 def get_available_models() -> List[str]:
-    """获取所有可用的对话模型"""
     return chat_models.copy()
 
 
 def simple_chat(message: str, **kwargs) -> str:
-    """
-    简单对话接口，自动构建消息格式
-    """
-    messages = [{"role": "user", "content": message}]
-    return chat(messages, **kwargs)
+    return chat([{"role": "user", "content": message}], **kwargs)
 
 
-# 测试函数
 def test_chat_model():
-    """测试对话模型功能"""
-    test_message = "你好，请简单介绍一下你自己。"
-
-    print("=== 对话模型测试 ===")
-    print(f"当前模型: {get_current_model()}")
-    print(f"使用智谱AI API")
-    print(f"测试消息: {test_message}")
-
-    # 检查智谱API配置
-    print("\n1. 检查智谱API配置...")
-    if not ZHIPU_API_KEY:
-        print("❌ 未找到智谱API密钥，请设置ZHIPU_API_KEY环境变量")
+    print("=== Chat Model Test ===")
+    print(f"current model: {get_current_model()}")
+    print(f"chat url: {CHAT_URL}")
+    if not CHAT_API_KEY:
+        print("CHAT_API_KEY missing, check .env")
         return False
-    else:
-        print("✅ 智谱API密钥配置正常")
-
-    # 测试对话
-    print("\n2. 测试模型对话...")
     try:
-        print("⏳ 正在生成回复...")
-        start_time = time.time()
-        response = simple_chat(test_message,)
-        end_time = time.time()
-
-        print(f"✅ 回复成功 (耗时: {end_time - start_time:.2f}秒)")
-        print(f"回复: {response}")
+        start = time.time()
+        resp = simple_chat("Hello, introduce yourself in one sentence.")
+        print(f"success, elapsed: {time.time() - start:.2f}s")
+        print(resp)
         return True
-    except Exception as e:
-        print(f"❌ 测试失败: {e}")
+    except Exception as exc:
+        print(f"test failed: {exc}")
         return False
 
-def test_performance():
-    """性能测试函数"""
-    test_message = "你好，请用100字左右简单介绍一下你自己。"
-
-    print("=== 性能测试开始 ===\n")
-
-    # 测试非流式
-    print("1. 测试非流式响应:")
-    try:
-        response = simple_chat(test_message, model="glm-4")  # 明确指定模型
-        print(f"回复: {response[:100]}...\n")
-    except Exception as e:
-        print(f"非流式测试失败: {e}\n")
-
-    # 测试流式
-    print("2. 测试流式响应:")
-    try:
-        messages = [{"role": "user", "content": test_message}]
-        full_response = ""
-        for chunk in stream_chat(messages, model="glm-4"):
-            full_response += chunk
-            print(chunk, end="", flush=True)
-        print(f"\n完整回复长度: {len(full_response)}字符\n")
-    except Exception as e:
-        print(f"流式测试失败: {e}\n")
 
 if __name__ == "__main__":
-    # 运行测试
-    test_performance()
     test_chat_model()

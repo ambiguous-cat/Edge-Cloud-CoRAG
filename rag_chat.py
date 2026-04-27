@@ -9,24 +9,26 @@ from typing import List, Dict, Any, Generator, Tuple
 from dotenv import load_dotenv
 import time
 import json
+import os
 
 from search_similar_documents import DocumentSearcher
 import chat_model
 
 load_dotenv()
+DEFAULT_MODEL_TYPE = os.getenv("RAG_DEFAULT_MODEL", "qwen3:1.7b").strip() or "qwen3:1.7b"
 
 class RAGChatService:
     """RAG对话服务 - 简化版，仅支持流式响应"""
     
     def __init__(self, 
                  searcher: DocumentSearcher = None,
-                 model_type: str = "llama3.1"):
+                 model_type: str = DEFAULT_MODEL_TYPE):
         """
         初始化RAG对话服务
         
         Args:
             searcher: 文档检索器
-            model_type: 模型类型 (llama3.1, gpt-4)
+            model_type: 模型类型
         """
         self.searcher = searcher or DocumentSearcher()
         self.model_type = model_type
@@ -380,13 +382,13 @@ class RAGChatService:
 
 
 
-def create_rag_service(model_type: str = "llama3.1") -> RAGChatService:
+def create_rag_service(model_type: str = DEFAULT_MODEL_TYPE) -> RAGChatService:
     """创建RAG服务实例"""
     searcher = DocumentSearcher()
     return RAGChatService(searcher=searcher, model_type=model_type)
 
 # 便捷函数
-def rag_ask_stream(question: str, model_type: str = "llama3.1", top_k: int = 3):
+def rag_ask_stream(question: str, model_type: str = DEFAULT_MODEL_TYPE, top_k: int = 3):
     """
     便捷的RAG流式问答函数
     
@@ -417,5 +419,5 @@ if __name__ == "__main__":
     # 使用便捷函数测试
     for question in test_questions:
         print(f"\n{'='*50}")
-        rag_ask_stream(question, model_type="llama3.1", top_k=2)
+        rag_ask_stream(question, model_type=DEFAULT_MODEL_TYPE, top_k=2)
         print("-" * 50)

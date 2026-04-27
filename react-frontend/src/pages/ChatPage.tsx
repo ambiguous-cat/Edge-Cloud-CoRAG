@@ -239,6 +239,25 @@ function toStreamInfoText(
   return parts.length > 0 ? `流式统计：${parts.join('，')}` : ''
 }
 
+function buildNetworkStatusText(status: {
+  localApiOnline: boolean
+  cloudApiOnline: boolean
+}): string {
+  if (status.localApiOnline && status.cloudApiOnline) {
+    return '本地与云端 API 连接正常。'
+  }
+
+  if (status.localApiOnline && !status.cloudApiOnline) {
+    return '云端 API 当前不可用，请检查云端服务。'
+  }
+
+  if (!status.localApiOnline && status.cloudApiOnline) {
+    return '本地 API 当前不可用，请检查本地后端。'
+  }
+
+  return '本地与云端 API 均不可用，请检查服务或网络后重试。'
+}
+
 interface StreamConsumeResult {
   receivedContent: boolean
   receivedDone: boolean
@@ -250,8 +269,12 @@ export function ChatPage() {
   const [networkStatus, setNetworkStatus] = useState<NetworkState>({
     localApiOnline: false,
     cloudApiOnline: false,
-    lastChecked: nowTime(),
+    lastChecked: '未检查',
   })
+  const [networkStatusText, setNetworkStatusText] = useState<string>(
+    '点击刷新以检测连接状态。',
+  )
+  const [isNetworkRefreshing, setIsNetworkRefreshing] = useState<boolean>(false)
   const [settingsOpen, setSettingsOpen] = useState<boolean>(true)
   const [privacyOpen, setPrivacyOpen] = useState<boolean>(true)
   const [settings, setSettings] = useState<SettingsState>(() =>
@@ -286,12 +309,34 @@ export function ChatPage() {
   }, [settings])
 
   const refreshNetworkStatus = useCallback(async () => {
-    const snapshot = await fetchApiHealthSnapshot()
-    setNetworkStatus({
-      ...snapshot,
-      lastChecked: nowTime(),
-    })
+    setIsNetworkRefreshing(true)
+    setNetworkStatusText('正在检查本地与云端 API 状态...')
+
+    try {
+      const snapshot = await fetchApiHealthSnapshot()
+      const checkedAt = nowTime()
+
+      setNetworkStatus({
+        ...snapshot,
+        lastChecked: checkedAt,
+      })
+      setNetworkStatusText(`${buildNetworkStatusText(snapshot)}（${checkedAt}）`)
+    } catch {
+      setNetworkStatusText('刷新失败：无法获取网络状态，请稍后重试。')
+    } finally {
+      setIsNetworkRefreshing(false)
+    }
   }, [])
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      void refreshNetworkStatus()
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [refreshNetworkStatus])
 
   const refreshPrivacyKeywords = useCallback(
     async (customSuccessMessage?: string) => {
@@ -576,6 +621,8 @@ export function ChatPage() {
 
           <NetworkStatusSection
             status={networkStatus}
+            statusText={networkStatusText}
+            refreshing={isNetworkRefreshing}
             onRefresh={() => void refreshNetworkStatus()}
           />
 

@@ -5,6 +5,8 @@ const { Text } = Typography
 
 interface NetworkStatusSectionProps {
   status: NetworkState
+  statusText: string
+  refreshing: boolean
   onRefresh: () => void
 }
 
@@ -14,6 +16,8 @@ function statusTag(online: boolean) {
 
 export function NetworkStatusSection({
   status,
+  statusText,
+  refreshing,
   onRefresh,
 }: NetworkStatusSectionProps) {
   return (
@@ -21,7 +25,7 @@ export function NetworkStatusSection({
       title="网络状态"
       size="small"
       extra={
-        <Button size="small" onClick={onRefresh}>
+        <Button size="small" onClick={onRefresh} loading={refreshing}>
           刷新
         </Button>
       }
@@ -36,6 +40,7 @@ export function NetworkStatusSection({
           {statusTag(status.cloudApiOnline)}
         </div>
         <Text type="secondary">最近检查：{status.lastChecked}</Text>
+        {statusText ? <Text type="secondary">{statusText}</Text> : null}
       </Space>
     </Card>
   )

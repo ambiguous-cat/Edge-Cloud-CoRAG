@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from search_similar_documents import DocumentSearcher
 from add_document_from_file import add_document_from_file
@@ -12,49 +13,32 @@ from typing import List, Dict, Any
 from embedding import get_embedding, get_embeddings
 import faiss
 import os
-import time
-import requests
+from datetime import datetime
 
 app = FastAPI(title="RAG系统API", description="支持文档管理、检索和对话功能")
+
+# CORS 配置：允许前端跨域访问云端 API
+raw_allow_origins = os.getenv(
+    "CORS_ALLOW_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://39.107.73.88:5173,https://39.107.73.88",
+)
+allow_origins = [origin.strip() for origin in raw_allow_origins.split(",") if origin.strip()]
+if not allow_origins:
+    allow_origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allow_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 searcher = DocumentSearcher()
+DEFAULT_CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-r1:1.5b").strip() or "deepseek-r1:1.5b"
 
 # 创建RAG服务实例 - 复用searcher避免重复初始化
-rag_service = RAGChatService(searcher=searcher, model_type="glm-4")
-
-
-# 网络监控类
-class NetworkMonitor:
-    @staticmethod
-    def get_status():
-        """获取网络状态"""
-        try:
-            # 测试云端连接
-            start_time = time.time()
-            response = requests.get("http://localhost:11434/api/tags", timeout=3)
-            latency = (time.time() - start_time) * 1000  # 转换为毫秒
-
-            if response.status_code == 200:
-                return {
-                    "cloud_available": True,
-                    "latency": latency,
-                    "bandwidth": 100  # 假设带宽，实际项目中可以测量
-                }
-            else:
-                return {
-                    "cloud_available": False,
-                    "latency": 0,
-                    "bandwidth": 0
-                }
-        except:
-            return {
-                "cloud_available": False,
-                "latency": 0,
-                "bandwidth": 0
-            }
-
-
-# 创建网络监控器
-network_monitor = NetworkMonitor()
+rag_service = RAGChatService(searcher=searcher, model_type=DEFAULT_CHAT_MODEL)
 
 
 class AddDocFromFileRequest(BaseModel):
@@ -70,7 +54,7 @@ class SearchRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    model_type: str = "deepseek-r1:1.5b"
+    model_type: str = DEFAULT_CHAT_MODEL
     stream: bool = True
     documents: list = None  # 可选的文档列表
     history: list = None  # 可选的历史消息列表
@@ -78,20 +62,11 @@ class ChatRequest(BaseModel):
 
 class RAGChatRequest(BaseModel):
     query: str
-    model_type: str = "deepseek-r1:1.5b"
+    model_type: str = DEFAULT_CHAT_MODEL
     top_k: int = 3
     stream: bool = True
     history: list = None  # 可选的历史消息列表
     similarity_threshold: float = 0.0  # 相似度阈值，默认为0.0（不过滤）
-
-
-class PrivacyCheckRequest(BaseModel):
-    chat_history: list  # 聊天历史记录
-    get_details: bool = False  # 是否返回详细信息
-
-
-class KeywordAddRequest(BaseModel):
-    keyword: str
 
 
 class AddJsonDocumentRequest(BaseModel):
@@ -780,44 +755,70 @@ def rag_chat(req: RAGChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def warm_up_model():
-    """预热模型，避免首次请求的冷启动延迟"""
-    print("🔥 开始预热Ollama模型...")
+@app.get("/system/status")
+def get_system_status():
+    """System status endpoint for frontend health checks."""
     try:
-        import requests
-        import time
+        db_path = os.getenv("DB_PATH", "local_knowledge.db")
+        index_path = os.getenv("FAISS_INDEX_PATH", "faiss_index.index")
 
-        # 发送一个简单的预热请求
-        warmup_start = time.time()
-        url = "http://localhost:11434/api/generate"
-        data = {
-            "model": "qwen3:1.7b",
-            "prompt": "Hello",
-            "stream": False,
-            "options": {
-                "num_predict": 1,  # 只生成1个token
-                "temperature": 0.1
+        total_docs = 0
+        total_chunks = 0
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM documents")
+            total_docs = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM document_chunks")
+            total_chunks = cursor.fetchone()[0]
+            conn.close()
+
+        if os.path.exists(index_path):
+            index = faiss.read_index(index_path)
+            faiss_info = {
+                "total_vectors": index.ntotal,
+                "dimension": index.d,
+                "index_type": str(type(index).__name__),
             }
-        }
-
-        response = requests.post(url, json=data, timeout=60)
-        warmup_time = time.time() - warmup_start
-
-        if response.status_code == 200:
-            print(f"✅ 模型预热完成，耗时: {warmup_time:.2f}秒")
         else:
-            print(f"⚠️ 模型预热失败: HTTP {response.status_code}")
+            faiss_info = {
+                "total_vectors": 0,
+                "dimension": 0,
+                "index_type": "index_file_not_found",
+            }
 
+        return {
+            "success": True,
+            "system_status": {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                # Keep these keys for frontend compatibility with old local backend shape.
+                "network": {"cloud_available": True, "latency": 0, "bandwidth": 0},
+                "complexity_analyzer": {
+                    "enabled": False,
+                    "total_queries": 0,
+                    "current_weights": {},
+                    "complexity_stats": {},
+                },
+                "privacy_detector": {
+                    "enabled": False,
+                    "keywords_count": 0,
+                    "questions_count": 0,
+                    "similarity_threshold": 0.0,
+                },
+                "knowledge_base": {
+                    "total_documents": total_docs,
+                    "total_chunks": total_chunks,
+                    "faiss_index": faiss_info,
+                },
+                "current_model": rag_service.model_type,
+            },
+        }
     except Exception as e:
-        print(f"⚠️ 模型预热出错: {e}")
-        print("   这可能不会影响正常功能，但首次请求可能较慢")
+        raise HTTPException(status_code=500, detail=f"获取系统状态失败: {str(e)}")
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    # 预热模型
-    warm_up_model()
 
     # 启动服务器
     uvicorn.run(app, host="0.0.0.0", port=8005, reload=False)

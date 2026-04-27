@@ -1,7 +1,6 @@
 import os
 import time
 import requests
-import openai
 from dotenv import load_dotenv
 from typing import List, Dict, Any, Generator, Optional
 
@@ -9,11 +8,18 @@ load_dotenv()  # 加载.env文件
 
 # 读取配置
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip('/')  # 去除末尾斜杠
+DEFAULT_CHAT_MODEL = os.getenv("RAG_DEFAULT_MODEL", "qwen3:1.7b").strip() or "qwen3:1.7b"
+CHAT_MODELS_ENV = os.getenv("RAG_CHAT_MODELS", DEFAULT_CHAT_MODEL)
 
 
-# 可用的对话模型
-chat_models = ['qwen3:1.7b']
-chat_model = chat_models[0]
+# 可用的对话模型（支持通过环境变量覆盖）
+chat_models = [model.strip() for model in CHAT_MODELS_ENV.split(",") if model.strip()]
+if not chat_models:
+    chat_models = [DEFAULT_CHAT_MODEL]
+if DEFAULT_CHAT_MODEL not in chat_models:
+    chat_models.insert(0, DEFAULT_CHAT_MODEL)
+
+chat_model = DEFAULT_CHAT_MODEL
 
 
 def chat(messages: List[Dict[str, str]], **kwargs) -> str:
@@ -23,8 +29,7 @@ def chat(messages: List[Dict[str, str]], **kwargs) -> str:
     """
     if chat_model not in chat_models:
         raise ValueError(f"不支持的模型: {chat_model}")
-    elif chat_model == 'qwen3:1.7b':
-        return qwen_chat(messages, "qwen3:1.7b", **kwargs)
+    return qwen_chat(messages, chat_model, **kwargs)
 
 
 def stream_chat(messages: List[Dict[str, str]], **kwargs) -> Generator[str, None, None]:
@@ -33,8 +38,7 @@ def stream_chat(messages: List[Dict[str, str]], **kwargs) -> Generator[str, None
     """
     if chat_model not in chat_models:
         raise ValueError(f"不支持的模型: {chat_model}")
-    elif chat_model == 'qwen3:1.7b':
-        return qwen_stream_chat(messages, "qwen3:1.7b", **kwargs)
+    return qwen_stream_chat(messages, chat_model, **kwargs)
 
 
 

@@ -117,3 +117,31 @@
   - Modified: session.txt - appended session record
   - Modified: docs.md - added F-007 delivery notes
 - Notes: `npm run lint` and `npm run build` both passed after warning fix.
+
+## Session 9 - 2026-04-27
+- Feature: Implement network status display and manual refresh feedback flow (F-008)
+- Status: completed
+- Changes: Added network status copy and loading state in the React panel, triggered health probing on initial page load, and provided readable status/error feedback after refresh. Included user-prepared backend/cloud-side file updates in the same commit as requested.
+- File changes:
+  - Modified: react-frontend/src/components/chat/NetworkStatusSection.tsx - added refresh loading state and status text display
+  - Modified: react-frontend/src/pages/ChatPage.tsx - added auto-probe on mount and readable network status/error messaging
+  - Modified: feature_list.json - set F-008 passes to true
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-008 delivery notes
+  - Modified: api_server.py - user-provided backend updates
+  - Modified: chat_model.py - user-provided backend updates
+  - Modified: embedding.py - user-provided backend updates
+  - Modified: rag_chat.py - user-provided backend updates
+  - Modified: react-frontend/src/services/apiConfig.ts - user-provided frontend config updates
+  - Modified: requirements.txt - user-provided dependency updates
+  - Modified: 云端/api_server.py - user-provided cloud-side updates
+  - Modified: 云端/chat_model.py - user-provided cloud-side updates
+  - Modified: 云端/chat_model_try.py - user-provided cloud-side updates
+  - Modified: 云端/embedding.py - user-provided cloud-side updates
+  - Modified: faiss_index.index - user-provided index updates
+  - Modified: local_knowledge.db - user-provided local DB updates
+  - Modified: 云端/faiss_index.index - user-provided cloud index updates
+  - Modified: 云端/local_knowledge.db - user-provided cloud DB updates
+  - Added: react-frontend/.env.example
+  - Added: 云端.zip
+- Notes: `npm run lint` and `npm run build` passed for the React frontend after the F-008 implementation.

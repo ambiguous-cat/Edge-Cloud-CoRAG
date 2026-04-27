@@ -217,3 +217,17 @@ Warning fix from review:
 Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
+
+## 14. F-008 Delivery Notes (2026-04-27)
+
+- Updated network status panel in `react-frontend/src/components/chat/NetworkStatusSection.tsx`
+  - Added refresh loading feedback on the button
+  - Added readable status text area below health tags
+- Updated chat page network flow in `react-frontend/src/pages/ChatPage.tsx`
+  - Added initial auto refresh on page mount
+  - Added readable network status summaries for local/cloud combinations
+  - Added readable fallback error text when refresh fails unexpectedly
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded

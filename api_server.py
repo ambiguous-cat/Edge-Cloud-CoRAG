@@ -18,6 +18,10 @@ import os
 import time
 import requests
 
+# 模型与Ollama地址统一配置（可由环境变量覆盖）
+DEFAULT_MODEL_TYPE = os.getenv("RAG_DEFAULT_MODEL", "qwen3:1.7b").strip() or "qwen3:1.7b"
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+
 
 app = FastAPI(title="RAG系统API", description="支持文档管理、检索和对话功能")
 
@@ -33,7 +37,7 @@ app.add_middleware(
 searcher = DocumentSearcher()
 
 # 创建RAG服务实例 - 复用searcher避免重复初始化
-rag_service = RAGChatService(searcher=searcher, model_type="qwen3:1.7b")
+rag_service = RAGChatService(searcher=searcher, model_type=DEFAULT_MODEL_TYPE)
 
 # 创建隐私检测器实例（设置阈值为0.85）
 privacy_detector = create_privacy_detector(similarity_threshold=0.85)
@@ -49,7 +53,7 @@ class NetworkMonitor:
         try:
             # 测试云端连接
             start_time = time.time()
-            response = requests.get("http://localhost:11434/api/tags", timeout=3)
+            response = requests.get(f"{OLLAMA_HOST}/api/tags", timeout=3)
             latency = (time.time() - start_time) * 1000  # 转换为毫秒
 
             if response.status_code == 200:
@@ -85,14 +89,14 @@ class SearchRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    model_type: str = "deepseek-r1:1.5b"
+    model_type: str = DEFAULT_MODEL_TYPE
     stream: bool = True
     documents: list = None  # 可选的文档列表
     history: list = None   # 可选的历史消息列表
 
 class RAGChatRequest(BaseModel):
     query: str
-    model_type: str = "deepseek-r1:1.5b"
+    model_type: str = DEFAULT_MODEL_TYPE
     top_k: int = 3
     stream: bool = True
     history: list = None   # 可选的历史消息列表
@@ -1112,9 +1116,9 @@ def warm_up_model():
 
         # 发送一个简单的预热请求
         warmup_start = time.time()
-        url = "http://localhost:11434/api/generate"
+        url = f"{OLLAMA_HOST}/api/generate"
         data = {
-            "model": "qwen3:1.7b",
+            "model": DEFAULT_MODEL_TYPE,
             "prompt": "Hello",
             "stream": False,
             "options": {
