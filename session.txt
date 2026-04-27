@@ -145,3 +145,16 @@
   - Added: react-frontend/.env.example
   - Added: 云端.zip
 - Notes: `npm run lint` and `npm run build` passed for the React frontend after the F-008 implementation.
+
+## Session 10 - 2026-04-27
+- Feature: Fix and implement the complexity detail modal, model state synchronization, and React chat-history parsing (F-009)
+- Status: completed
+- Changes: Added a complexity detail modal with route/model/score/history details, preserved backend complexity analysis fields in routing decisions, and corrected chat history construction so the current query is not duplicated in history.
+- File changes:
+  - Added: react-frontend/src/components/chat/ComplexityDetailModal.tsx
+  - Modified: react-frontend/src/pages/ChatPage.tsx - added complexity detail state, modal entry point, synchronized model state, and corrected history parsing
+  - Modified: react-frontend/src/services/routingService.ts - normalized and exposed complexity route details from backend responses
+  - Modified: react-frontend/src/styles/chat-page.css - added complexity modal layout styles
+  - Modified: feature_list.json - set F-009 passes to true
+  - Modified: docs.md - added F-009 delivery notes
+- Notes: `init.sh` is still blocked by Bash E_ACCESSDENIED in this shell, so verification used equivalent frontend checks. `npm run lint` and `npm run build` both passed; build still reports the existing Vite large chunk warning.

@@ -105,7 +105,7 @@
       "Chat-history parsing is compatible with the React message data structure.",
       "The complexity detail modal can open, close, and render correctly."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-010",

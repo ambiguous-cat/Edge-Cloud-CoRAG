@@ -231,3 +231,22 @@ Verification:
 Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
+
+## 15. F-009 Delivery Notes (2026-04-27)
+
+- Added `react-frontend/src/components/chat/ComplexityDetailModal.tsx`
+  - Shows current model mode, actual route, complexity score, threshold, confidence, route explanation, recommendations, and parsed chat history.
+  - Renders dimension-level complexity scores from backend `complexity_analysis` when available.
+- Updated `react-frontend/src/services/routingService.ts`
+  - Preserves complexity route details returned by `/complexity/route` instead of only keeping total score.
+  - Normalizes optional backend fields defensively before exposing them to UI state.
+- Updated `react-frontend/src/pages/ChatPage.tsx`
+  - Added a chat-header entry point for the complexity detail modal.
+  - Keeps model selection synchronized into the detail state used by the modal.
+  - Fixed chat-history construction so previous React messages are sent as history while the current query remains separate.
+- Updated `react-frontend/src/styles/chat-page.css`
+  - Added modal layout styles for score rows and history preview.
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded

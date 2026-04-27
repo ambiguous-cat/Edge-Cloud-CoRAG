@@ -1,6 +1,10 @@
-import { Layout, Typography } from 'antd'
+import { Button, Layout, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChatComposer } from '../components/chat/ChatComposer'
+import {
+  ComplexityDetailModal,
+  type ComplexityDetailState,
+} from '../components/chat/ComplexityDetailModal'
 import { ChatMessageList } from '../components/chat/ChatMessageList'
 import { ModelSelectorSection } from '../components/chat/ModelSelectorSection'
 import { NetworkStatusSection } from '../components/chat/NetworkStatusSection'
@@ -22,6 +26,7 @@ import {
   rememberRouteDecision,
   streamRagChat,
   type ApiTarget,
+  type ChatHistoryMessage,
   type RouteMode,
   type RoutingDecision,
 } from '../services'
@@ -161,8 +166,10 @@ function toRouteMode(model: ModelOption): RouteMode {
   return 'auto'
 }
 
-function buildHistory(messages: ChatMessage[]) {
-  return messages.map(({ role, content }) => ({ role, content }))
+function buildHistory(messages: ChatMessage[]): ChatHistoryMessage[] {
+  return messages
+    .filter((message) => message.content.trim().length > 0)
+    .map(({ role, content }) => ({ role, content }))
 }
 
 function getErrorMessage(error: unknown): string {
@@ -219,6 +226,30 @@ function toRouteStatusText(decision: RoutingDecision): string {
   }
 
   return details.join(' ｜ ')
+}
+
+function buildComplexityDetail(
+  query: string,
+  model: ModelOption,
+  decision: RoutingDecision,
+  threshold: number,
+  historyPreview: ChatHistoryMessage[],
+): ComplexityDetailState {
+  return {
+    query,
+    model,
+    routeLabel: toTargetLabel(decision.target),
+    reasonLabel: decision.reasonLabel,
+    threshold,
+    score: decision.complexityScore,
+    confidence: decision.complexityConfidence,
+    route: decision.complexityRoute,
+    baseRoute: decision.complexityBaseRoute,
+    explanation: decision.complexityExplanation,
+    recommendations: decision.complexityRecommendations ?? [],
+    analysis: decision.complexityAnalysis ?? {},
+    historyPreview,
+  }
 }
 
 function toStreamInfoText(
@@ -289,6 +320,9 @@ export function ChatPage() {
   const [composerText, setComposerText] = useState<string>('')
   const [routeStatusText, setRouteStatusText] = useState<string>('')
   const [streamInfoText, setStreamInfoText] = useState<string>('')
+  const [complexityDetail, setComplexityDetail] =
+    useState<ComplexityDetailState | null>(null)
+  const [complexityModalOpen, setComplexityModalOpen] = useState<boolean>(false)
   const [isSending, setIsSending] = useState<boolean>(false)
 
   const canSend = useMemo(
@@ -422,7 +456,11 @@ export function ChatPage() {
       createdAt: nowTime(),
     }
 
-    const history = buildHistory([...messages, userMessage])
+    const history = buildHistory(messages)
+    const historyPreview: ChatHistoryMessage[] = [
+      ...history,
+      { role: 'user', content },
+    ]
 
     setMessages((current) => [...current, userMessage, pendingAssistantMessage])
     setComposerText('')
@@ -517,6 +555,15 @@ export function ChatPage() {
       })
 
       setRouteStatusText(toRouteStatusText(routeDecision))
+      setComplexityDetail(
+        buildComplexityDetail(
+          content,
+          model,
+          routeDecision,
+          settings.complexityThreshold,
+          historyPreview,
+        ),
+      )
 
       const primaryResult = await consumeStream(routeDecision.target)
       if (primaryResult.serverErrorMessage) {
@@ -654,6 +701,13 @@ export function ChatPage() {
             <Title level={4} className="chat-area__title">
               聊天区
             </Title>
+            <Button
+              size="small"
+              onClick={() => setComplexityModalOpen(true)}
+              disabled={!complexityDetail}
+            >
+              复杂度详情
+            </Button>
             {routeStatusText ? <Text type="secondary">{routeStatusText}</Text> : null}
             {streamInfoText ? <Text type="secondary">{streamInfoText}</Text> : null}
           </div>
@@ -669,6 +723,12 @@ export function ChatPage() {
           />
         </div>
       </Content>
+
+      <ComplexityDetailModal
+        open={complexityModalOpen}
+        detail={complexityDetail}
+        onClose={() => setComplexityModalOpen(false)}
+      />
     </Layout>
   )
 }

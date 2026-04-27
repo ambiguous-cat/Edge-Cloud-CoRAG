@@ -17,8 +17,12 @@ interface ComplexityRouteResponse {
   success?: unknown
   routing_result?: {
     route?: unknown
+    base_route?: unknown
+    explanation?: unknown
+    confidence?: unknown
+    recommendations?: unknown
     complexity_analysis?: {
-      total_complexity?: unknown
+      [key: string]: unknown
     }
   }
 }
@@ -45,6 +49,12 @@ export interface RoutingDecision {
   localAvailable: boolean
   cloudAvailable: boolean
   complexityScore?: number
+  complexityAnalysis?: Record<string, number>
+  complexityRoute?: string
+  complexityBaseRoute?: string
+  complexityExplanation?: string
+  complexityConfidence?: number
+  complexityRecommendations?: string[]
   privacyScore?: number
   fromCache: boolean
 }
@@ -58,6 +68,35 @@ export interface DecideRouteRequest {
 
 function normalizeScore(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+function normalizeString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(
+    (item): item is string => typeof item === 'string' && item.trim().length > 0,
+  )
+}
+
+function normalizeScoreRecord(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+
+  const result: Record<string, number> = {}
+  for (const [key, score] of Object.entries(value)) {
+    if (typeof score === 'number' && Number.isFinite(score)) {
+      result[key] = score
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined
 }
 
 function normalizeRouteToTarget(route: unknown): ApiTarget | null {
@@ -117,6 +156,12 @@ function finalizeDecision(
   mode: 'manual' | 'auto',
   options?: {
     complexityScore?: number
+    complexityAnalysis?: Record<string, number>
+    complexityRoute?: string
+    complexityBaseRoute?: string
+    complexityExplanation?: string
+    complexityConfidence?: number
+    complexityRecommendations?: string[]
     privacyScore?: number
     fromCache?: boolean
   },
@@ -130,6 +175,12 @@ function finalizeDecision(
     localAvailable,
     cloudAvailable,
     complexityScore: options?.complexityScore,
+    complexityAnalysis: options?.complexityAnalysis,
+    complexityRoute: options?.complexityRoute,
+    complexityBaseRoute: options?.complexityBaseRoute,
+    complexityExplanation: options?.complexityExplanation,
+    complexityConfidence: options?.complexityConfidence,
+    complexityRecommendations: options?.complexityRecommendations,
     privacyScore: options?.privacyScore,
     fromCache: options?.fromCache === true,
   }
@@ -162,7 +213,16 @@ async function evaluatePrivacyRisk(
 async function evaluateComplexityRoute(
   query: string,
   complexityThreshold: number,
-): Promise<{ target: ApiTarget | null; score?: number }> {
+): Promise<{
+  target: ApiTarget | null
+  score?: number
+  analysis?: Record<string, number>
+  route?: string
+  baseRoute?: string
+  explanation?: string
+  confidence?: number
+  recommendations?: string[]
+}> {
   try {
     const { data } = await getHttpClient('local').post<ComplexityRouteResponse>(
       '/complexity/route',
@@ -172,14 +232,21 @@ async function evaluateComplexityRoute(
       } satisfies ComplexityRouteRequest,
     )
 
-    const routeTarget = normalizeRouteToTarget(data?.routing_result?.route)
-    const score = normalizeScore(
-      data?.routing_result?.complexity_analysis?.total_complexity,
-    )
+    const routingResult = data?.routing_result
+    const route = normalizeString(routingResult?.route)
+    const analysis = normalizeScoreRecord(routingResult?.complexity_analysis)
+    const routeTarget = normalizeRouteToTarget(route)
+    const score = normalizeScore(analysis?.total_complexity)
 
     return {
       target: routeTarget,
       score,
+      analysis,
+      route,
+      baseRoute: normalizeString(routingResult?.base_route),
+      explanation: normalizeString(routingResult?.explanation),
+      confidence: normalizeScore(routingResult?.confidence),
+      recommendations: normalizeStringList(routingResult?.recommendations),
     }
   } catch {
     return {
@@ -328,7 +395,15 @@ export async function decideRoute({
       localAvailable,
       cloudAvailable,
       'auto',
-      { complexityScore: complexity.score },
+      {
+        complexityScore: complexity.score,
+        complexityAnalysis: complexity.analysis,
+        complexityRoute: complexity.route,
+        complexityBaseRoute: complexity.baseRoute,
+        complexityExplanation: complexity.explanation,
+        complexityConfidence: complexity.confidence,
+        complexityRecommendations: complexity.recommendations,
+      },
     )
   }
 

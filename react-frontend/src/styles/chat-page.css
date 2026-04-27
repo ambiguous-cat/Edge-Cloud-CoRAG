@@ -39,10 +39,38 @@
 .chat-area__header {
   border-bottom: 1px solid #edf0f5;
   padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .chat-area__title {
   margin: 0 !important;
+}
+
+.complexity-modal__stack {
+  width: 100%;
+}
+
+.complexity-modal__text {
+  margin-top: 6px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: #2f3745;
+}
+
+.complexity-modal__metric {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.complexity-modal__history-content {
+  margin-left: 4px;
+  white-space: pre-wrap;
 }
 
 .control-section__stack {
