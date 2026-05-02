@@ -12,6 +12,9 @@ export { RagStreamError, sendRagChat, streamRagChat } from './chatService'
 export type {
   ChatHistoryMessage,
   RagStreamEvent,
+  RagStreamInfoEvent,
+  RetrievedDocument,
+  RetrievalFilterStats,
   SendRagChatRequest,
 } from './chatService'
 

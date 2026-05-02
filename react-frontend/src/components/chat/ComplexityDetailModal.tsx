@@ -1,24 +1,7 @@
 import { Descriptions, List, Modal, Progress, Space, Typography } from 'antd'
-import type { ChatHistoryMessage } from '../../services'
-import type { ModelOption } from './types'
+import type { ComplexityDetailState, ModelOption } from './types'
 
 const { Text } = Typography
-
-export interface ComplexityDetailState {
-  query: string
-  model: ModelOption
-  routeLabel: string
-  reasonLabel: string
-  threshold: number
-  score?: number
-  confidence?: number
-  route?: string
-  baseRoute?: string
-  explanation?: string
-  recommendations: string[]
-  analysis: Record<string, number>
-  historyPreview: ChatHistoryMessage[]
-}
 
 interface ComplexityDetailModalProps {
   open: boolean

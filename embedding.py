@@ -10,10 +10,10 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip('/')  # 
 OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEFAULT_EMBEDDING_TYPE = os.getenv("EMBEDDING_TYPE", "bge").strip().lower() or "bge"
-DEFAULT_EMBEDDING_MODEL = (
-    os.getenv("EMBEDDING_MODEL", "bge-large:latest").strip() or "bge-large:latest"
-)
-
+# DEFAULT_EMBEDDING_MODEL = (
+#     os.getenv("EMBEDDING_MODEL", "bge-large:latest").strip() or "bge-large:latest"
+# )
+DEFAULT_EMBEDDING_MODEL="bge-large:latest"
 # 支持的嵌入类型：
 # text -> OpenAI 兼容嵌入接口
 # bge/qwen -> Ollama /api/embeddings

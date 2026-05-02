@@ -61,6 +61,9 @@ export interface RagStreamInfoEvent extends RagStreamBaseEvent {
   charCount?: number
   estimatedTokens?: number
   chunkCount?: number
+  retrievedDocuments: RetrievedDocument[]
+  contextLength?: number
+  filterStats?: RetrievalFilterStats
 }
 
 export interface RagStreamErrorEvent extends RagStreamBaseEvent {
@@ -71,6 +74,22 @@ export interface RagStreamErrorEvent extends RagStreamBaseEvent {
 export interface RagStreamDoneEvent extends RagStreamBaseEvent {
   type: 'done'
   content: string
+}
+
+export interface RetrievedDocument {
+  title: string
+  content: string
+  similarityScore?: number
+  documentId?: number
+  chunkId?: number
+  chunkIndex?: number
+}
+
+export interface RetrievalFilterStats {
+  similarityThreshold?: number
+  originalCount?: number
+  filteredCount?: number
+  acceptedCount?: number
 }
 
 type RagStreamErrorCode =
@@ -111,6 +130,48 @@ function toNumber(value: unknown): number | undefined {
 
 function toContentString(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+function toOptionalNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+function toOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined
+}
+
+function normalizeRetrievedDocuments(value: unknown): RetrievedDocument[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => {
+      return item !== null && typeof item === 'object' && !Array.isArray(item)
+    })
+    .map((item, index) => ({
+      title: toOptionalString(item.title) ?? `文档 ${index + 1}`,
+      content: toContentString(item.content),
+      similarityScore: toOptionalNumber(item.similarity_score),
+      documentId:
+        toOptionalNumber(item.document_id) ?? toOptionalNumber(item.doc_id),
+      chunkId: toOptionalNumber(item.chunk_id),
+      chunkIndex: toOptionalNumber(item.chunk_index),
+    }))
+}
+
+function normalizeFilterStats(value: unknown): RetrievalFilterStats | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+
+  const stats = value as Record<string, unknown>
+  return {
+    similarityThreshold: toOptionalNumber(stats.similarity_threshold),
+    originalCount: toOptionalNumber(stats.original_count),
+    filteredCount: toOptionalNumber(stats.filtered_count),
+    acceptedCount: toOptionalNumber(stats.accepted_count),
+  }
 }
 
 function splitSseBlocks(buffer: string): { blocks: string[]; rest: string } {
@@ -172,6 +233,9 @@ function normalizeEvents(payload: StreamEventPayload): RagStreamEvent[] {
       charCount: toNumber(payload.char_count),
       estimatedTokens: toNumber(payload.estimated_tokens),
       chunkCount: toNumber(payload.chunk_count),
+      retrievedDocuments: normalizeRetrievedDocuments(payload.retrieved_documents),
+      contextLength: toNumber(payload.context_length),
+      filterStats: normalizeFilterStats(payload.filter_stats),
     })
   } else if (typeValue === 'error') {
     events.push({

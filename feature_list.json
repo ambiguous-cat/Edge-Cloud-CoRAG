@@ -117,7 +117,7 @@
       "Displayed content comes from streaming info events.",
       "Closing behavior is normal and does not affect chat state."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-011",

@@ -1,19 +1,19 @@
-import { Button, Layout, Typography } from 'antd'
+import { Layout, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChatComposer } from '../components/chat/ChatComposer'
-import {
-  ComplexityDetailModal,
-  type ComplexityDetailState,
-} from '../components/chat/ComplexityDetailModal'
+import { ComplexityDetailModal } from '../components/chat/ComplexityDetailModal'
 import { ChatMessageList } from '../components/chat/ChatMessageList'
 import { ModelSelectorSection } from '../components/chat/ModelSelectorSection'
 import { NetworkStatusSection } from '../components/chat/NetworkStatusSection'
 import { PrivacySection } from '../components/chat/PrivacySection'
+import { ResponseDetailModal } from '../components/chat/ResponseDetailModal'
 import { SettingsSection } from '../components/chat/SettingsSection'
 import type {
   ChatMessage,
+  ComplexityDetailState,
   ModelOption,
   NetworkState,
+  ResponseDetailState,
   SettingsState,
 } from '../components/chat/types'
 import {
@@ -27,6 +27,7 @@ import {
   streamRagChat,
   type ApiTarget,
   type ChatHistoryMessage,
+  type RagStreamInfoEvent,
   type RouteMode,
   type RoutingDecision,
 } from '../services'
@@ -270,6 +271,18 @@ function toStreamInfoText(
   return parts.length > 0 ? `流式统计：${parts.join('，')}` : ''
 }
 
+function buildResponseDetail(event: RagStreamInfoEvent): ResponseDetailState {
+  return {
+    responseTime: event.responseTime,
+    charCount: event.charCount,
+    estimatedTokens: event.estimatedTokens,
+    chunkCount: event.chunkCount,
+    retrievedDocuments: event.retrievedDocuments,
+    contextLength: event.contextLength,
+    filterStats: event.filterStats,
+  }
+}
+
 function buildNetworkStatusText(status: {
   localApiOnline: boolean
   cloudApiOnline: boolean
@@ -320,9 +333,12 @@ export function ChatPage() {
   const [composerText, setComposerText] = useState<string>('')
   const [routeStatusText, setRouteStatusText] = useState<string>('')
   const [streamInfoText, setStreamInfoText] = useState<string>('')
-  const [complexityDetail, setComplexityDetail] =
+  const [selectedComplexityDetail, setSelectedComplexityDetail] =
     useState<ComplexityDetailState | null>(null)
   const [complexityModalOpen, setComplexityModalOpen] = useState<boolean>(false)
+  const [selectedResponseDetail, setSelectedResponseDetail] =
+    useState<ResponseDetailState | null>(null)
+  const [responseModalOpen, setResponseModalOpen] = useState<boolean>(false)
   const [isSending, setIsSending] = useState<boolean>(false)
 
   const canSend = useMemo(
@@ -515,8 +531,16 @@ export function ChatPage() {
         }
 
         if (event.type === 'info') {
+          const nextResponseDetail = buildResponseDetail(event)
           setStreamInfoText(
             toStreamInfoText(event.responseTime, event.charCount, event.chunkCount),
+          )
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, responseDetail: nextResponseDetail }
+                : message,
+            ),
           )
           continue
         }
@@ -555,13 +579,18 @@ export function ChatPage() {
       })
 
       setRouteStatusText(toRouteStatusText(routeDecision))
-      setComplexityDetail(
-        buildComplexityDetail(
-          content,
-          model,
-          routeDecision,
-          settings.complexityThreshold,
-          historyPreview,
+      const nextComplexityDetail = buildComplexityDetail(
+        content,
+        model,
+        routeDecision,
+        settings.complexityThreshold,
+        historyPreview,
+      )
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? { ...message, complexityDetail: nextComplexityDetail }
+            : message,
         ),
       )
 
@@ -701,18 +730,21 @@ export function ChatPage() {
             <Title level={4} className="chat-area__title">
               聊天区
             </Title>
-            <Button
-              size="small"
-              onClick={() => setComplexityModalOpen(true)}
-              disabled={!complexityDetail}
-            >
-              复杂度详情
-            </Button>
             {routeStatusText ? <Text type="secondary">{routeStatusText}</Text> : null}
             {streamInfoText ? <Text type="secondary">{streamInfoText}</Text> : null}
           </div>
 
-          <ChatMessageList messages={messages} />
+          <ChatMessageList
+            messages={messages}
+            onOpenComplexityDetail={(detail) => {
+              setSelectedComplexityDetail(detail)
+              setComplexityModalOpen(true)
+            }}
+            onOpenResponseDetail={(detail) => {
+              setSelectedResponseDetail(detail)
+              setResponseModalOpen(true)
+            }}
+          />
 
           <ChatComposer
             value={composerText}
@@ -726,8 +758,13 @@ export function ChatPage() {
 
       <ComplexityDetailModal
         open={complexityModalOpen}
-        detail={complexityDetail}
+        detail={selectedComplexityDetail}
         onClose={() => setComplexityModalOpen(false)}
+      />
+      <ResponseDetailModal
+        open={responseModalOpen}
+        detail={selectedResponseDetail}
+        onClose={() => setResponseModalOpen(false)}
       />
     </Layout>
   )

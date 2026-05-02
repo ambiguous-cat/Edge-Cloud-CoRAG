@@ -73,6 +73,22 @@
   white-space: pre-wrap;
 }
 
+.response-modal__stack {
+  width: 100%;
+}
+
+.response-modal__document-table {
+  margin-top: 8px;
+}
+
+.response-modal__document-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .control-section__stack {
   width: 100%;
 }
@@ -129,6 +145,13 @@
   margin-bottom: 6px;
   font-size: 12px;
   color: #666;
+}
+
+.message-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .composer {

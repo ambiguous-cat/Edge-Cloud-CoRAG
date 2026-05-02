@@ -250,3 +250,22 @@ Verification:
 Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
+
+## 16. F-010 Delivery Notes (2026-05-01)
+
+- Added `react-frontend/src/components/chat/ResponseDetailModal.tsx`
+  - Shows basic response statistics from stream `info` events: first-token response time, chunk count, character count, estimated tokens, context length, and retrieved document count.
+  - Shows retrieval filter statistics when returned by the backend.
+  - Shows retrieved document rows with title, similarity score, chunk index, and content preview.
+- Updated `react-frontend/src/services/chatService.ts`
+  - Normalizes `retrieved_documents`, `context_length`, and `filter_stats` from `/rag_chat` stream info payloads.
+  - Exposes typed `RetrievedDocument` and `RetrievalFilterStats` structures for UI use.
+- Updated `react-frontend/src/pages/ChatPage.tsx` and `react-frontend/src/components/chat/ChatMessageList.tsx`
+  - Stores response detail and complexity detail on the corresponding assistant message.
+  - Adds per-answer `复杂度详情` and `响应详情` buttons below each AI response when that data is available.
+  - Keeps the modals read-only, so opening and closing them does not mutate chat messages or replace another turn's detail data.
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded
+- `npm run build` still reports the existing Vite large chunk warning.
