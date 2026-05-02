@@ -175,3 +175,15 @@
   - Modified: session.txt - appended session record
   - Modified: docs.md - added F-010 delivery notes
 - Notes: `init.sh` was intentionally not run because the user had already started the project manually. `npm run lint` and `npm run build` both passed; build still reports the existing Vite large chunk warning.
+
+## Session 12 - 2026-05-02
+- Feature: Implement cloud-timeout fallback strategy and graded error messaging (F-011)
+- Status: completed
+- Changes: Added target-aware stream error messages, visible auto-mode fallback notices for timeout/network/HTTP failures, and manual mode guidance that avoids forcing local/cloud fallback outside auto mode.
+- File changes:
+  - Modified: react-frontend/src/services/chatService.ts - normalized HTTP, timeout, and network stream errors into readable target-aware messages and filtered stack-like backend details.
+  - Modified: react-frontend/src/pages/ChatPage.tsx - added graded manual local/cloud guidance and clearer auto fallback notices.
+  - Modified: feature_list.json - set F-011 passes to true
+  - Modified: session.txt - appended session record
+  - Modified: docs.md - added F-011 delivery notes
+- Notes: `init.sh` was intentionally not run because the user had already started the project manually. `npm run lint` and `npm run build` both passed; build still reports the existing Vite large chunk warning.

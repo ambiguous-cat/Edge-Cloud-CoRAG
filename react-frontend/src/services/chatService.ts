@@ -303,6 +303,58 @@ async function readErrorDetail(response: Response): Promise<string | null> {
   return null
 }
 
+function targetName(target: ApiTarget): string {
+  return target === 'local' ? '本地' : '云端'
+}
+
+function cleanErrorDetail(value: string | null): string | null {
+  if (!value) {
+    return null
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const hasStackTrace =
+    trimmed.includes('Traceback') ||
+    trimmed.includes(' at ') ||
+    trimmed.includes('\n    at ')
+
+  if (hasStackTrace) {
+    return null
+  }
+
+  return trimmed.length > 120 ? `${trimmed.slice(0, 120)}...` : trimmed
+}
+
+function buildHttpErrorMessage(
+  target: ApiTarget,
+  statusCode: number,
+  detail: string | null,
+): string {
+  const readableDetail = cleanErrorDetail(detail)
+  const prefix = `${targetName(target)}请求失败（HTTP ${statusCode}）`
+  return readableDetail
+    ? `${prefix}：${readableDetail}`
+    : `${prefix}，服务暂时无法完成处理。`
+}
+
+function buildTimeoutMessage(
+  target: ApiTarget,
+  phase: 'first_chunk' | 'inactivity',
+): string {
+  const prefix = `${targetName(target)}请求超时`
+  return phase === 'first_chunk'
+    ? `${prefix}，尚未收到响应数据。`
+    : `${prefix}，流式响应长时间没有新数据。`
+}
+
+function buildNetworkErrorMessage(target: ApiTarget): string {
+  return `${targetName(target)}连接中断，请检查对应服务状态后重试。`
+}
+
 export async function sendRagChat({
   query,
   routeMode,
@@ -382,9 +434,7 @@ export async function* streamRagChat({
 
     if (!response.ok) {
       const detail = await readErrorDetail(response)
-      const message = detail
-        ? `请求失败（${response.status}）：${detail}`
-        : `请求失败，状态码 ${response.status}。`
+      const message = buildHttpErrorMessage(resolvedTarget, response.status, detail)
       throw new RagStreamError(message, 'http', resolvedTarget, response.status)
     }
 
@@ -449,12 +499,8 @@ export async function* streamRagChat({
     }
 
     if (error instanceof DOMException && error.name === 'AbortError') {
-      const message =
-        timeoutPhase === 'first_chunk'
-          ? '请求超时，请检查网络或稍后重试。'
-          : '流式响应长时间无数据，连接可能中断，请重试。'
       throw new RagStreamError(
-        message,
+        buildTimeoutMessage(resolvedTarget, timeoutPhase),
         'timeout',
         resolvedTarget,
         undefined,
@@ -464,7 +510,7 @@ export async function* streamRagChat({
 
     if (error instanceof TypeError) {
       throw new RagStreamError(
-        '网络连接中断，请检查服务状态后重试。',
+        buildNetworkErrorMessage(resolvedTarget),
         'network',
         resolvedTarget,
         undefined,

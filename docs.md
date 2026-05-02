@@ -269,3 +269,19 @@ Verification:
 - `npm run lint` succeeded
 - `npm run build` succeeded
 - `npm run build` still reports the existing Vite large chunk warning.
+
+## 17. F-011 Delivery Notes (2026-05-02)
+
+- Updated `react-frontend/src/services/chatService.ts`
+  - Added target-aware user messages for local/cloud HTTP failures, network interruptions, and stream timeouts.
+  - Differentiates first-response timeout from stream inactivity timeout.
+  - Filters stack-like backend error detail before showing HTTP errors to regular users.
+- Updated `react-frontend/src/pages/ChatPage.tsx`
+  - Auto mode now shows visible fallback notices for timeout, network, and HTTP failures before retrying the fallback target.
+  - Manual cloud mode keeps the user on cloud and gives guidance to refresh status or switch to auto/local mode.
+  - Manual local mode gives local-service guidance without forcing cloud fallback.
+
+Verification:
+- `npm run lint` succeeded
+- `npm run build` succeeded
+- `npm run build` still reports the existing Vite large chunk warning.

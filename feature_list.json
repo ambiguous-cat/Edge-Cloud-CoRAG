@@ -129,7 +129,7 @@
       "Manual cloud mode failures do not force fallback and provide guidance.",
       "Error messages do not expose irrelevant stack details to regular users."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "F-012",

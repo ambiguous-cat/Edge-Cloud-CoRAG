@@ -173,8 +173,24 @@ function buildHistory(messages: ChatMessage[]): ChatHistoryMessage[] {
     .map(({ role, content }) => ({ role, content }))
 }
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(error: unknown, routeMode?: RouteMode): string {
   if (error instanceof RagStreamError) {
+    if (routeMode === 'cloud' && error.target === 'cloud') {
+      if (error.code === 'timeout') {
+        return `${error.message} 当前为手动云端模式，不会自动切换到本地；可切换为自动模式或本地模式后重试。`
+      }
+
+      if (error.code === 'network') {
+        return `${error.message} 当前为手动云端模式，请先刷新网络状态或切换为自动/本地模式。`
+      }
+
+      return `${error.message} 当前为手动云端模式，请确认云端服务可用后重试。`
+    }
+
+    if (routeMode === 'local' && error.target === 'local') {
+      return `${error.message} 当前为手动本地模式，请确认本地后端可用后重试。`
+    }
+
     return error.message
   }
 
@@ -207,6 +223,26 @@ function shouldRetryInAutoMode(routeMode: RouteMode, error: unknown): boolean {
   }
 
   return RECOVERABLE_STREAM_ERROR_CODES.has(error.code)
+}
+
+function getAutoFallbackNotice(error: unknown, fallbackTarget: ApiTarget): string {
+  if (error instanceof RagStreamError) {
+    const source = toTargetLabel(error.target)
+    const fallback = toTargetLabel(fallbackTarget)
+    if (error.code === 'timeout') {
+      return `[自动回退] ${source}请求超时，切换到${fallback}继续处理。`
+    }
+
+    if (error.code === 'network') {
+      return `[自动回退] ${source}连接中断，切换到${fallback}继续处理。`
+    }
+
+    if (error.code === 'http') {
+      return `[自动回退] ${source}服务返回错误，切换到${fallback}继续处理。`
+    }
+  }
+
+  return `[自动回退] 主路由中断，切换到${toTargetLabel(fallbackTarget)}重试。`
 }
 
 function toTargetLabel(target: ApiTarget): string {
@@ -630,6 +666,7 @@ export function ChatPage() {
 
       if (canFallback && routeDecision && routeDecision.fallbackTarget) {
         const fallbackTarget = routeDecision.fallbackTarget
+        const fallbackNotice = getAutoFallbackNotice(error, fallbackTarget)
         setRouteStatusText(
           `主路由失败，已回退到${toTargetLabel(fallbackTarget)}继续处理`,
         )
@@ -640,12 +677,8 @@ export function ChatPage() {
                   ...message,
                   content:
                     message.content.trim().length > 0
-                      ? `${message.content}\n\n[自动回退] 主路由中断，切换到${toTargetLabel(
-                          fallbackTarget,
-                        )}重试。`
-                      : `[自动回退] 主路由中断，切换到${toTargetLabel(
-                          fallbackTarget,
-                        )}重试。`,
+                      ? `${message.content}\n\n${fallbackNotice}`
+                      : fallbackNotice,
                 }
               : message,
           ),
@@ -673,11 +706,11 @@ export function ChatPage() {
             rememberRouteDecision(content, fallbackTarget)
           }
         } catch (fallbackError) {
-          appendAssistantError(getErrorMessage(fallbackError))
+          appendAssistantError(getErrorMessage(fallbackError, routeMode))
           setStreamInfoText('')
         }
       } else {
-        appendAssistantError(getErrorMessage(error))
+        appendAssistantError(getErrorMessage(error, routeMode))
         setStreamInfoText('')
       }
     } finally {
