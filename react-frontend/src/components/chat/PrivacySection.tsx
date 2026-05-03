@@ -1,4 +1,4 @@
-import { Button, Card, Input, Space, Typography } from 'antd'
+import { Button, Card, Input, Popconfirm, Space, Typography } from 'antd'
 
 const { Paragraph, Text } = Typography
 
@@ -8,10 +8,12 @@ interface PrivacySectionProps {
   keywords: string[]
   statusText: string
   addingKeyword: boolean
+  deletingKeyword: string | null
   refreshingKeywords: boolean
   onToggle: () => void
   onKeywordInputChange: (value: string) => void
   onAddKeyword: () => void
+  onDeleteKeyword: (keyword: string) => void
   onRefreshKeywords: () => void
 }
 
@@ -21,12 +23,16 @@ export function PrivacySection({
   keywords,
   statusText,
   addingKeyword,
+  deletingKeyword,
   refreshingKeywords,
   onToggle,
   onKeywordInputChange,
   onAddKeyword,
+  onDeleteKeyword,
   onRefreshKeywords,
 }: PrivacySectionProps) {
+  const controlsDisabled = addingKeyword || refreshingKeywords || deletingKeyword !== null
+
   return (
     <Card
       title="隐私管理区"
@@ -42,19 +48,23 @@ export function PrivacySection({
           <Input
             value={keywordInput}
             placeholder="输入隐私关键词"
-            disabled={addingKeyword}
+            disabled={controlsDisabled}
             onChange={(event) => onKeywordInputChange(event.target.value)}
           />
           <Space>
             <Button
               type="primary"
               loading={addingKeyword}
-              disabled={refreshingKeywords}
+              disabled={refreshingKeywords || deletingKeyword !== null}
               onClick={onAddKeyword}
             >
               新增关键词
             </Button>
-            <Button loading={refreshingKeywords} onClick={onRefreshKeywords}>
+            <Button
+              loading={refreshingKeywords}
+              disabled={addingKeyword || deletingKeyword !== null}
+              onClick={onRefreshKeywords}
+            >
               刷新列表
             </Button>
           </Space>
@@ -63,7 +73,26 @@ export function PrivacySection({
             <Text strong>当前关键词</Text>
             <ul className="keyword-list">
               {keywords.map((keyword) => (
-                <li key={keyword}>{keyword}</li>
+                <li key={keyword}>
+                  <span>{keyword}</span>
+                  <Popconfirm
+                    title="删除隐私关键词"
+                    description={`确认删除“${keyword}”？`}
+                    okText="删除"
+                    cancelText="取消"
+                    onConfirm={() => onDeleteKeyword(keyword)}
+                    disabled={controlsDisabled}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      loading={deletingKeyword === keyword}
+                      disabled={controlsDisabled && deletingKeyword !== keyword}
+                    >
+                      删除
+                    </Button>
+                  </Popconfirm>
+                </li>
               ))}
             </ul>
           </div>

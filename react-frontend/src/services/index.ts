@@ -11,6 +11,8 @@ export { ApiClientError, getHttpClient } from './httpClient'
 export { RagStreamError, sendRagChat, streamRagChat } from './chatService'
 export type {
   ChatHistoryMessage,
+  PaperSearchInfo,
+  RagPaper,
   RagStreamEvent,
   RagStreamInfoEvent,
   RetrievedDocument,
@@ -21,7 +23,11 @@ export type {
 export { fetchApiHealthSnapshot } from './systemService'
 export type { ApiHealthSnapshot } from './systemService'
 
-export { createPrivacyKeyword, fetchPrivacyKeywords } from './privacyService'
+export {
+  createPrivacyKeyword,
+  deletePrivacyKeyword,
+  fetchPrivacyKeywords,
+} from './privacyService'
 
-export { decideRoute, rememberRouteDecision } from './routingService'
+export { clearRouteDecisionCache, decideRoute, rememberRouteDecision } from './routingService'
 export type { DecideRouteRequest, RoutingDecision, RoutingSettings } from './routingService'

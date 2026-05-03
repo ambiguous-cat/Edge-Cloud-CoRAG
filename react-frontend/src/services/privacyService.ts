@@ -12,12 +12,31 @@ interface AddPrivacyKeywordResponse {
   keyword?: unknown
 }
 
+interface DeletePrivacyKeywordResponse {
+  success?: unknown
+  message?: unknown
+  keyword?: unknown
+}
+
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
   }
 
-  return value.filter((item): item is string => typeof item === 'string')
+  return value
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item
+      }
+
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        const keyword = (item as { keyword?: unknown }).keyword
+        return typeof keyword === 'string' ? keyword : ''
+      }
+
+      return ''
+    })
+    .filter((item) => item.trim().length > 0)
 }
 
 function toMessage(value: unknown, fallback: string): string {
@@ -48,4 +67,16 @@ export async function createPrivacyKeyword(keyword: string): Promise<string> {
   }
 
   return toMessage(data?.message, `关键词“${keyword}”添加成功。`)
+}
+
+export async function deletePrivacyKeyword(keyword: string): Promise<string> {
+  const { data } = await getHttpClient('local').delete<DeletePrivacyKeywordResponse>(
+    `/privacy/keywords/${encodeURIComponent(keyword)}`,
+  )
+
+  if (data?.success !== true) {
+    throw new Error(toMessage(data?.message, `关键词“${keyword}”删除失败。`))
+  }
+
+  return toMessage(data?.message, `关键词“${keyword}”删除成功。`)
 }

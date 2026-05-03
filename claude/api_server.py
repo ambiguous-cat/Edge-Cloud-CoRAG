@@ -6,8 +6,15 @@ from search_similar_documents import DocumentSearcher
 from add_document_from_file import add_document_from_file
 from rag_chat import RAGChatService
 import chat_model
+import reranker
+import command_router
+import paper_search_service
 import json
+import logging
+import queue
 import sqlite3
+import threading
+import time
 import numpy as np
 from typing import List, Dict, Any
 from embedding import get_embedding, get_embeddings
@@ -16,6 +23,8 @@ import os
 from datetime import datetime
 
 app = FastAPI(title="RAG系统API", description="支持文档管理、检索和对话功能")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger("paper_search.api")
 
 # CORS 配置：允许前端跨域访问云端 API
 raw_allow_origins = os.getenv(
@@ -39,6 +48,260 @@ DEFAULT_CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-r1:1.5b").strip() or "dee
 
 # 创建RAG服务实例 - 复用searcher避免重复初始化
 rag_service = RAGChatService(searcher=searcher, model_type=DEFAULT_CHAT_MODEL)
+
+
+def _paper_search_enabled() -> bool:
+    return os.getenv("PAPER_SEARCH_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _paper_summary_prompt(
+    plan: Dict[str, Any],
+    papers: List[Dict[str, Any]],
+    local_documents: List[Dict[str, Any]] = None,
+    user_topic: str = "",
+) -> str:
+    queries = plan.get("queries", [])
+    return (
+        "用户触发了 /论文检索。请结合本地知识库检索结果和 arXiv 论文检索结果，用中文给出研究型总结。\n"
+        "要求：\n"
+        "1. 先说明根据上下文生成的 arXiv 检索方向。\n"
+        "2. 同时利用本地知识库内容和论文摘要，回答用户当前主题。\n"
+        "3. 总结代表性论文分别解决的问题，以及它们与本地资料的关系。\n"
+        "4. 不要编造论文信息，只使用提供的论文标题、摘要、作者、日期和链接。\n\n"
+        f"用户主题：{user_topic or '根据最近对话判断'}\n"
+        f"检索 query：{json.dumps(queries, ensure_ascii=False)}\n"
+        f"本地知识库片段数量：{len(local_documents or [])}\n"
+        f"论文数量：{len(papers)}"
+    )
+
+
+def _paper_search_progress_interval() -> float:
+    return float(os.getenv("PAPER_SEARCH_PROGRESS_INTERVAL", "5"))
+
+
+def _paper_search_total_timeout() -> float:
+    return float(os.getenv("PAPER_SEARCH_TOTAL_TIMEOUT", "90"))
+
+
+def _augment_history_for_paper_search(history: List[Dict[str, str]] = None, current_message: str = "") -> List[Dict[str, str]]:
+    augmented = list(history or [])
+    topic = command_router.remove_paper_search_command(current_message)
+    if topic:
+        augmented.append({"role": "user", "content": topic})
+    return augmented
+
+
+def _retrieve_local_documents_for_paper_search(
+    query: str,
+    top_k: int = 3,
+    similarity_threshold: float = 0.0,
+) -> List[Dict[str, Any]]:
+    topic = command_router.remove_paper_search_command(query)
+    if not topic:
+        return []
+
+    try:
+        logger.info("paper search local RAG retrieval started | topic=%s | top_k=%s", topic, top_k)
+        documents = rag_service.retrieve_documents(topic, top_k)
+        filter_result = rag_service.filter_documents_by_similarity(documents, similarity_threshold)
+        filtered = filter_result["filtered_documents"]
+        logger.info(
+            "paper search local RAG retrieval done | before=%s | after=%s",
+            filter_result["original_count"],
+            len(filtered),
+        )
+        return filtered
+    except Exception:
+        logger.exception("paper search local RAG retrieval failed")
+        return []
+
+
+def _run_paper_search_with_progress(history: List[Dict[str, str]] = None):
+    result_queue = queue.Queue(maxsize=1)
+
+    def worker():
+        try:
+            logger.info("paper search worker started")
+            result_queue.put(("result", paper_search_service.search_papers_from_context(history)))
+            logger.info("paper search worker finished")
+        except Exception as exc:
+            logger.exception("paper search worker failed")
+            result_queue.put(("error", exc))
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+
+    started_at = time.time()
+    heartbeat_count = 0
+    interval = max(1.0, _paper_search_progress_interval())
+    total_timeout = max(interval, _paper_search_total_timeout())
+
+    while True:
+        try:
+            kind, payload = result_queue.get(timeout=interval)
+            if kind == "error":
+                raise payload
+            return payload
+        except queue.Empty:
+            heartbeat_count += 1
+            elapsed = time.time() - started_at
+            if elapsed > total_timeout:
+                logger.error("paper search timed out | elapsed=%.2fs", elapsed)
+                raise TimeoutError(f"论文检索超时，已等待 {elapsed:.0f} 秒")
+
+            logger.info("paper search still running | elapsed=%.2fs | heartbeat=%s", elapsed, heartbeat_count)
+            yield {
+                "elapsed": elapsed,
+                "heartbeat_count": heartbeat_count,
+            }
+
+
+def _stream_paper_search_for_chat(
+    history: List[Dict[str, str]] = None,
+    current_message: str = "",
+    extra_documents: List[Dict[str, Any]] = None,
+):
+    logger.info("paper search chat stream started | history_messages=%s", len(history or []))
+
+    augmented_history = _augment_history_for_paper_search(history, current_message)
+    search_runner = _run_paper_search_with_progress(augmented_history)
+    while True:
+        try:
+            next(search_runner)
+        except StopIteration as stop:
+            plan, papers = stop.value
+            break
+
+    logger.info("paper search chat stream results ready | queries=%s | paper_count=%s | errors=%s", plan.get("queries", []), len(papers), plan.get("errors", []))
+
+    queries = plan.get("queries", [])
+    if queries:
+        yield "检索词：\n" + "\n".join([f"- {query}" for query in queries]) + "\n\n"
+
+    if plan.get("errors"):
+        yield "部分检索步骤遇到问题，已尽量使用可用结果继续。\n\n"
+
+    if not papers:
+        yield "没有检索到可用论文结果，请稍后重试或补充更多上下文。"
+        return
+
+    documents = list(extra_documents or []) + paper_search_service.papers_to_documents(papers)
+    prompt = _paper_summary_prompt(
+        plan,
+        papers,
+        local_documents=extra_documents or [],
+        user_topic=command_router.remove_paper_search_command(current_message),
+    )
+    logger.info("paper search chat summary started | document_count=%s", len(documents))
+    for chunk in rag_service.simple_chat_stream(prompt, documents, history):
+        yield chunk
+    logger.info("paper search chat stream done")
+
+
+def _stream_paper_search_for_rag(
+    query: str,
+    top_k: int = 3,
+    history: List[Dict[str, str]] = None,
+    similarity_threshold: float = 0.0,
+):
+    logger.info("paper search rag stream started | history_messages=%s", len(history or []))
+    yield {
+        "type": "tool_start",
+        "tool": "paper_search",
+        "content": "",
+        "done": False,
+    }
+
+    augmented_history = _augment_history_for_paper_search(history, query)
+    search_runner = _run_paper_search_with_progress(augmented_history)
+    while True:
+        try:
+            progress = next(search_runner)
+            yield {
+                "type": "tool_progress",
+                "tool": "paper_search",
+                "content": "",
+                "elapsed": progress["elapsed"],
+                "done": False,
+            }
+        except StopIteration as stop:
+            plan, papers = stop.value
+            break
+
+    logger.info("paper search rag results ready | queries=%s | paper_count=%s | errors=%s", plan.get("queries", []), len(papers), plan.get("errors", []))
+
+    yield {
+        "type": "tool_query",
+        "tool": "paper_search",
+        "queries": plan.get("queries", []),
+        "reason": plan.get("reason", ""),
+        "errors": plan.get("errors", []),
+        "done": False,
+    }
+
+    yield {
+        "type": "tool_result",
+        "tool": "paper_search",
+        "papers": papers,
+        "done": False,
+    }
+
+    local_query = command_router.remove_paper_search_command(query)
+    if not local_query and plan.get("queries"):
+        local_query = plan["queries"][0]
+    local_documents = _retrieve_local_documents_for_paper_search(local_query, top_k, similarity_threshold)
+
+    yield {
+        "type": "retrieval_result",
+        "tool": "local_rag",
+        "query": local_query,
+        "retrieved_documents": local_documents,
+        "done": False,
+    }
+
+    if not papers and not local_documents:
+        yield {
+            "type": "error",
+            "content": "没有检索到可用论文结果，请稍后重试或补充更多上下文。",
+            "done": True,
+        }
+        return
+
+    documents = local_documents + paper_search_service.papers_to_documents(papers)
+    prompt = _paper_summary_prompt(
+        plan,
+        papers,
+        local_documents=local_documents,
+        user_topic=command_router.remove_paper_search_command(query),
+    )
+    full_response = ""
+    chunk_count = 0
+
+    logger.info("paper search rag summary started | document_count=%s", len(documents))
+    for chunk in rag_service.simple_chat_stream(prompt, documents, history):
+        full_response += chunk
+        chunk_count += 1
+        yield {
+            "type": "content",
+            "content": chunk,
+            "done": False,
+        }
+
+    logger.info("paper search rag stream done | chunk_count=%s | chars=%s", chunk_count, len(full_response))
+    yield {
+        "type": "info",
+        "content": "",
+        "done": True,
+        "paper_search": {
+            "queries": plan.get("queries", []),
+            "paper_count": len(papers),
+            "papers": papers,
+            "local_documents": local_documents,
+            "errors": plan.get("errors", []),
+        },
+        "char_count": len(full_response),
+        "chunk_count": chunk_count,
+    }
 
 
 class AddDocFromFileRequest(BaseModel):
@@ -332,7 +595,7 @@ def _update_faiss_index_for_json(embeddings: List[np.ndarray], chunk_ids: List[i
 @app.post("/search")
 def search(req: SearchRequest):
     try:
-        results = searcher.search_similar_documents(req.query, req.top_k)
+        results = rag_service.retrieve_documents(req.query, req.top_k)
         return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -680,6 +943,25 @@ def simple_chat(req: ChatRequest):
                             "content": str(msg["content"])
                         })
 
+        if _paper_search_enabled() and command_router.is_paper_search_command(req.message):
+            if req.stream:
+                def generate_paper_response():
+                    try:
+                        for chunk in _stream_paper_search_for_chat(history, req.message, documents):
+                            yield f"data: {json.dumps({'content': chunk, 'done': False})}\n\n"
+                        yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
+                    except Exception as e:
+                        yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+
+                return StreamingResponse(
+                    generate_paper_response(),
+                    media_type="text/plain",
+                    headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+                )
+
+            response = "".join(_stream_paper_search_for_chat(history, req.message, documents))
+            return {"response": response}
+
         if req.stream:
             # 流式响应
             def generate_response():
@@ -727,6 +1009,25 @@ def rag_chat(req: RAGChatRequest):
                             "role": msg["role"],
                             "content": str(msg["content"])
                         })
+
+        if _paper_search_enabled() and command_router.is_paper_search_command(req.query):
+            if req.stream:
+                def generate_paper_rag_response():
+                    try:
+                        for data in _stream_paper_search_for_rag(req.query, req.top_k, history, req.similarity_threshold):
+                            yield f"data: {json.dumps(data)}\n\n"
+                    except Exception as e:
+                        yield f"data: {json.dumps({'type': 'error', 'content': str(e), 'done': True})}\n\n"
+
+                return StreamingResponse(
+                    generate_paper_rag_response(),
+                    media_type="text/plain",
+                    headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+                )
+
+            local_documents = _retrieve_local_documents_for_paper_search(req.query, req.top_k, req.similarity_threshold)
+            response = "".join(_stream_paper_search_for_chat(history, req.query, local_documents))
+            return {"response": response}
 
         if req.stream:
             # 流式响应 - 增强版，包含详细信息
@@ -809,6 +1110,12 @@ def get_system_status():
                     "total_documents": total_docs,
                     "total_chunks": total_chunks,
                     "faiss_index": faiss_info,
+                },
+                "reranker": {
+                    "enabled": reranker.is_rerank_enabled(),
+                    "model": reranker.get_current_rerank_model(),
+                    "candidate_multiplier": reranker.get_candidate_multiplier(),
+                    "max_candidates": reranker.get_max_candidates(),
                 },
                 "current_model": rag_service.model_type,
             },

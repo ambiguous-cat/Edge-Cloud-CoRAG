@@ -1,7 +1,6 @@
-import { Layout, Typography } from 'antd'
+import { Button, Layout, Popconfirm, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChatComposer } from '../components/chat/ChatComposer'
-import { ComplexityDetailModal } from '../components/chat/ComplexityDetailModal'
 import { ChatMessageList } from '../components/chat/ChatMessageList'
 import { ModelSelectorSection } from '../components/chat/ModelSelectorSection'
 import { NetworkStatusSection } from '../components/chat/NetworkStatusSection'
@@ -19,7 +18,9 @@ import type {
 import {
   ApiClientError,
   RagStreamError,
+  clearRouteDecisionCache,
   createPrivacyKeyword,
+  deletePrivacyKeyword,
   decideRoute,
   fetchApiHealthSnapshot,
   fetchPrivacyKeywords,
@@ -47,6 +48,7 @@ const INITIAL_SETTINGS: SettingsState = {
 }
 
 const SETTINGS_SESSION_KEY = 'rag_settings_v1'
+const MESSAGES_STORAGE_KEY = 'rag_chat_messages_v1'
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
@@ -56,6 +58,23 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     createdAt: '09:30:00',
   },
 ]
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isChatMessage(value: unknown): value is ChatMessage {
+  if (!isPlainRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    (value.role === 'user' || value.role === 'assistant') &&
+    typeof value.content === 'string' &&
+    typeof value.createdAt === 'string'
+  )
+}
 
 const RECOVERABLE_STREAM_ERROR_CODES = new Set([
   'http',
@@ -155,6 +174,29 @@ function loadSettingsFromSession(): SettingsState {
   }
 }
 
+function loadMessagesFromStorage(): ChatMessage[] {
+  if (typeof window === 'undefined') {
+    return INITIAL_MESSAGES
+  }
+
+  const rawValue = window.localStorage.getItem(MESSAGES_STORAGE_KEY)
+  if (!rawValue) {
+    return INITIAL_MESSAGES
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as unknown
+    if (!Array.isArray(parsed)) {
+      return INITIAL_MESSAGES
+    }
+
+    const storedMessages = parsed.filter(isChatMessage)
+    return storedMessages.length > 0 ? storedMessages : INITIAL_MESSAGES
+  } catch {
+    return INITIAL_MESSAGES
+  }
+}
+
 function toRouteMode(model: ModelOption): RouteMode {
   if (model === 'cloud') {
     return 'cloud'
@@ -169,6 +211,7 @@ function toRouteMode(model: ModelOption): RouteMode {
 
 function buildHistory(messages: ChatMessage[]): ChatHistoryMessage[] {
   return messages
+    .filter((message) => message.id !== 'assistant-0')
     .filter((message) => message.content.trim().length > 0)
     .map(({ role, content }) => ({ role, content }))
 }
@@ -316,6 +359,62 @@ function buildResponseDetail(event: RagStreamInfoEvent): ResponseDetailState {
     retrievedDocuments: event.retrievedDocuments,
     contextLength: event.contextLength,
     filterStats: event.filterStats,
+    paperSearch: event.paperSearch
+      ? {
+          status: event.paperSearch.errors.length > 0 ? 'failed' : 'completed',
+          queries: event.paperSearch.queries,
+          papers: event.paperSearch.papers,
+          paperCount: event.paperSearch.paperCount,
+          errors: event.paperSearch.errors,
+        }
+      : undefined,
+    localRetrieval:
+      event.paperSearch && event.paperSearch.localDocuments.length > 0
+        ? {
+            retrievedDocuments: event.paperSearch.localDocuments,
+          }
+        : undefined,
+  }
+}
+
+function mergeUniqueStrings(current: string[], next: string[]): string[] {
+  return Array.from(new Set([...current, ...next]))
+}
+
+function mergePaperSearch(
+  current: ResponseDetailState['paperSearch'],
+  next: NonNullable<ResponseDetailState['paperSearch']>,
+): NonNullable<ResponseDetailState['paperSearch']> {
+  const paperMap = new Map<string, NonNullable<ResponseDetailState['paperSearch']>['papers'][number]>()
+
+  for (const paper of [...(current?.papers ?? []), ...next.papers]) {
+    const key = paper.id ?? paper.url ?? paper.title
+    paperMap.set(key, paper)
+  }
+
+  return {
+    status: next.status,
+    elapsed: next.elapsed ?? current?.elapsed,
+    queries: mergeUniqueStrings(current?.queries ?? [], next.queries),
+    reason: next.reason ?? current?.reason,
+    papers: Array.from(paperMap.values()),
+    paperCount: next.paperCount ?? current?.paperCount,
+    errors: mergeUniqueStrings(current?.errors ?? [], next.errors),
+  }
+}
+
+function buildInitialResponseDetail(
+  decision: RoutingDecision,
+  complexityDetail: ComplexityDetailState,
+): ResponseDetailState {
+  return {
+    retrievedDocuments: [],
+    routeLabel: toTargetLabel(decision.target),
+    reasonLabel: decision.reasonLabel,
+    privacyScore: decision.privacyScore,
+    privacyChecked: decision.privacyChecked,
+    privacyRisk: decision.reason === 'privacy_protection',
+    complexityDetail,
   }
 }
 
@@ -364,14 +463,14 @@ export function ChatPage() {
   const [keywords, setKeywords] = useState<string[]>([])
   const [privacyStatusText, setPrivacyStatusText] = useState<string>('')
   const [isPrivacyAdding, setIsPrivacyAdding] = useState<boolean>(false)
+  const [deletingKeyword, setDeletingKeyword] = useState<string | null>(null)
   const [isPrivacyRefreshing, setIsPrivacyRefreshing] = useState<boolean>(false)
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    loadMessagesFromStorage(),
+  )
   const [composerText, setComposerText] = useState<string>('')
   const [routeStatusText, setRouteStatusText] = useState<string>('')
   const [streamInfoText, setStreamInfoText] = useState<string>('')
-  const [selectedComplexityDetail, setSelectedComplexityDetail] =
-    useState<ComplexityDetailState | null>(null)
-  const [complexityModalOpen, setComplexityModalOpen] = useState<boolean>(false)
   const [selectedResponseDetail, setSelectedResponseDetail] =
     useState<ResponseDetailState | null>(null)
   const [responseModalOpen, setResponseModalOpen] = useState<boolean>(false)
@@ -393,6 +492,18 @@ export function ChatPage() {
       // Ignore storage failures and keep in-memory settings available.
     }
   }, [settings])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      window.localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages))
+    } catch {
+      // Ignore storage failures; the in-memory chat still remains usable.
+    }
+  }, [messages])
 
   const refreshNetworkStatus = useCallback(async () => {
     setIsNetworkRefreshing(true)
@@ -487,6 +598,35 @@ export function ChatPage() {
     void refreshPrivacyKeywords()
   }
 
+  const removePrivacyKeyword = async (keyword: string) => {
+    setDeletingKeyword(keyword)
+    setPrivacyStatusText(`正在删除关键词“${keyword}”...`)
+
+    try {
+      const successMessage = await deletePrivacyKeyword(keyword)
+      await refreshPrivacyKeywords(`${successMessage}（${nowTime()}）`)
+    } catch (error) {
+      setPrivacyStatusText(
+        `删除失败：${getApiErrorMessage(error, '请检查服务状态后重试。')}`,
+      )
+    } finally {
+      setDeletingKeyword(null)
+    }
+  }
+
+  const clearMessages = () => {
+    setMessages(INITIAL_MESSAGES)
+    setRouteStatusText('')
+    setStreamInfoText('')
+    setSelectedResponseDetail(null)
+    setResponseModalOpen(false)
+    clearRouteDecisionCache()
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(MESSAGES_STORAGE_KEY)
+    }
+  }
+
   const sendMessage = async () => {
     if (!canSend) {
       return
@@ -537,6 +677,21 @@ export function ChatPage() {
       )
     }
 
+    const updateAssistantResponseDetail = (
+      updater: (current: ResponseDetailState | undefined) => ResponseDetailState,
+    ) => {
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                responseDetail: updater(message.responseDetail),
+              }
+            : message,
+        ),
+      )
+    }
+
     const consumeStream = async (target: ApiTarget): Promise<StreamConsumeResult> => {
       let receivedContent = false
       let receivedDone = false
@@ -571,13 +726,96 @@ export function ChatPage() {
           setStreamInfoText(
             toStreamInfoText(event.responseTime, event.charCount, event.chunkCount),
           )
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === assistantMessageId
-                ? { ...message, responseDetail: nextResponseDetail }
-                : message,
-            ),
+          updateAssistantResponseDetail((current) => ({
+            ...current,
+            ...nextResponseDetail,
+            paperSearch: nextResponseDetail.paperSearch
+              ? mergePaperSearch(current?.paperSearch, nextResponseDetail.paperSearch)
+              : current?.paperSearch,
+            localRetrieval:
+              nextResponseDetail.localRetrieval ?? current?.localRetrieval,
+          }))
+          continue
+        }
+
+        if (event.type === 'tool_start') {
+          setStreamInfoText('正在检索论文...')
+          updateAssistantResponseDetail((current) => ({
+            retrievedDocuments: current?.retrievedDocuments ?? [],
+            ...current,
+            paperSearch: mergePaperSearch(current?.paperSearch, {
+              status: 'running',
+              queries: [],
+              papers: [],
+              errors: [],
+            }),
+          }))
+          continue
+        }
+
+        if (event.type === 'tool_progress') {
+          const elapsedText =
+            event.elapsed === undefined ? '' : `（${event.elapsed.toFixed(0)} 秒）`
+          setStreamInfoText(`正在检索论文${elapsedText}...`)
+          updateAssistantResponseDetail((current) => ({
+            retrievedDocuments: current?.retrievedDocuments ?? [],
+            ...current,
+            paperSearch: mergePaperSearch(current?.paperSearch, {
+              status: 'running',
+              elapsed: event.elapsed,
+              queries: [],
+              papers: [],
+              errors: [],
+            }),
+          }))
+          continue
+        }
+
+        if (event.type === 'tool_query') {
+          setStreamInfoText(
+            event.queries.length > 0
+              ? `论文检索关键词：${event.queries.join('，')}`
+              : '已生成论文检索方向',
           )
+          updateAssistantResponseDetail((current) => ({
+            retrievedDocuments: current?.retrievedDocuments ?? [],
+            ...current,
+            paperSearch: mergePaperSearch(current?.paperSearch, {
+              status: event.errors.length > 0 ? 'failed' : 'running',
+              queries: event.queries,
+              reason: event.reason,
+              papers: [],
+              errors: event.errors,
+            }),
+          }))
+          continue
+        }
+
+        if (event.type === 'tool_result') {
+          setStreamInfoText(`论文检索完成，找到 ${event.papers.length} 篇论文`)
+          updateAssistantResponseDetail((current) => ({
+            retrievedDocuments: current?.retrievedDocuments ?? [],
+            ...current,
+            paperSearch: mergePaperSearch(current?.paperSearch, {
+              status: 'completed',
+              queries: [],
+              papers: event.papers,
+              paperCount: event.papers.length,
+              errors: [],
+            }),
+          }))
+          continue
+        }
+
+        if (event.type === 'retrieval_result') {
+          updateAssistantResponseDetail((current) => ({
+            retrievedDocuments: current?.retrievedDocuments ?? [],
+            ...current,
+            localRetrieval: {
+              query: event.query,
+              retrievedDocuments: event.retrievedDocuments,
+            },
+          }))
           continue
         }
 
@@ -613,36 +851,43 @@ export function ChatPage() {
           complexityThreshold: settings.complexityThreshold,
         },
       })
+      const currentRouteDecision = routeDecision
 
-      setRouteStatusText(toRouteStatusText(routeDecision))
+      setRouteStatusText(toRouteStatusText(currentRouteDecision))
       const nextComplexityDetail = buildComplexityDetail(
         content,
         model,
-        routeDecision,
+        currentRouteDecision,
         settings.complexityThreshold,
         historyPreview,
       )
       setMessages((current) =>
         current.map((message) =>
           message.id === assistantMessageId
-            ? { ...message, complexityDetail: nextComplexityDetail }
+            ? {
+                ...message,
+                responseDetail: buildInitialResponseDetail(
+                  currentRouteDecision,
+                  nextComplexityDetail,
+                ),
+              }
             : message,
         ),
       )
 
-      const primaryResult = await consumeStream(routeDecision.target)
+      const primaryResult = await consumeStream(currentRouteDecision.target)
       if (primaryResult.serverErrorMessage) {
         throw new RagStreamError(
           primaryResult.serverErrorMessage,
           'network',
-          routeDecision.target,
+          currentRouteDecision.target,
         )
       }
       if (!primaryResult.receivedDone) {
         throw new RagStreamError(
           '未收到完成事件，流式响应可能已中断。',
           'unexpected_end',
-          routeDecision.target,
+          currentRouteDecision.target,
         )
       }
 
@@ -656,7 +901,7 @@ export function ChatPage() {
         )
       }
 
-      rememberRouteDecision(content, routeDecision.target)
+      rememberRouteDecision(content, currentRouteDecision.target)
     } catch (error) {
       const canFallback =
         routeDecision !== null &&
@@ -748,10 +993,12 @@ export function ChatPage() {
             keywords={keywords}
             statusText={privacyStatusText}
             addingKeyword={isPrivacyAdding}
+            deletingKeyword={deletingKeyword}
             refreshingKeywords={isPrivacyRefreshing}
             onToggle={() => setPrivacyOpen((current) => !current)}
             onKeywordInputChange={setKeywordInput}
             onAddKeyword={() => void addPrivacyKeyword()}
+            onDeleteKeyword={(keyword) => void removePrivacyKeyword(keyword)}
             onRefreshKeywords={handleRefreshPrivacyKeywords}
           />
         </div>
@@ -760,19 +1007,29 @@ export function ChatPage() {
       <Content className="chat-layout__content">
         <div className="chat-area">
           <div className="chat-area__header">
-            <Title level={4} className="chat-area__title">
-              聊天区
-            </Title>
+            <div className="chat-area__header-row">
+              <Title level={4} className="chat-area__title">
+                聊天区
+              </Title>
+              <Popconfirm
+                title="清空聊天记录"
+                description="清空后会同时重置本轮隐私上下文和路由缓存。"
+                okText="清空"
+                cancelText="取消"
+                onConfirm={clearMessages}
+                disabled={isSending}
+              >
+                <Button size="small" danger disabled={isSending}>
+                  清空记录
+                </Button>
+              </Popconfirm>
+            </div>
             {routeStatusText ? <Text type="secondary">{routeStatusText}</Text> : null}
             {streamInfoText ? <Text type="secondary">{streamInfoText}</Text> : null}
           </div>
 
           <ChatMessageList
             messages={messages}
-            onOpenComplexityDetail={(detail) => {
-              setSelectedComplexityDetail(detail)
-              setComplexityModalOpen(true)
-            }}
             onOpenResponseDetail={(detail) => {
               setSelectedResponseDetail(detail)
               setResponseModalOpen(true)
@@ -789,11 +1046,6 @@ export function ChatPage() {
         </div>
       </Content>
 
-      <ComplexityDetailModal
-        open={complexityModalOpen}
-        detail={selectedComplexityDetail}
-        onClose={() => setComplexityModalOpen(false)}
-      />
       <ResponseDetailModal
         open={responseModalOpen}
         detail={selectedResponseDetail}

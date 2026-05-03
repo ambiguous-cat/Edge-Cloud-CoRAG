@@ -1,4 +1,9 @@
-import type { ChatHistoryMessage, RetrievedDocument, RetrievalFilterStats } from '../../services'
+import type {
+  ChatHistoryMessage,
+  RagPaper,
+  RetrievedDocument,
+  RetrievalFilterStats,
+} from '../../services'
 
 export type ModelOption = 'auto' | 'cloud' | 'local'
 
@@ -51,4 +56,27 @@ export interface ResponseDetailState {
   contextLength?: number
   retrievedDocuments: RetrievedDocument[]
   filterStats?: RetrievalFilterStats
+  routeLabel?: string
+  reasonLabel?: string
+  privacyScore?: number
+  privacyChecked?: boolean
+  privacyRisk?: boolean
+  complexityDetail?: ComplexityDetailState
+  paperSearch?: PaperSearchDetailState
+  localRetrieval?: LocalRetrievalDetailState
+}
+
+export interface PaperSearchDetailState {
+  status: 'idle' | 'running' | 'completed' | 'failed'
+  elapsed?: number
+  queries: string[]
+  reason?: string
+  papers: RagPaper[]
+  paperCount?: number
+  errors: string[]
+}
+
+export interface LocalRetrievalDetailState {
+  query?: string
+  retrievedDocuments: RetrievedDocument[]
 }

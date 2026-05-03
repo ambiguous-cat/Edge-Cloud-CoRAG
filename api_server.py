@@ -16,6 +16,7 @@ from embedding import get_embedding
 import faiss
 import os
 import time
+import threading
 import requests
 
 # 模型与Ollama地址统一配置（可由环境变量覆盖）
@@ -47,9 +48,21 @@ complexity_analyzer = ComplexityAnalyzer()
 
 # 网络监控类
 class NetworkMonitor:
+    CACHE_TTL_SECONDS = 30
+
+    def __init__(self):
+        self._status = {
+            "cloud_available": True,
+            "latency": 0,
+            "bandwidth": 100,
+            "source": "initial"
+        }
+        self._last_checked = 0.0
+        self._refreshing = False
+        self._lock = threading.Lock()
+
     @staticmethod
-    def get_status():
-        """获取网络状态"""
+    def _probe_status():
         try:
             # 测试云端连接
             start_time = time.time()
@@ -60,20 +73,68 @@ class NetworkMonitor:
                 return {
                     "cloud_available": True,
                     "latency": latency,
-                    "bandwidth": 100  # 假设带宽，实际项目中可以测量
+                    "bandwidth": 100,  # 假设带宽，实际项目中可以测量
+                    "source": "probe"
                 }
             else:
                 return {
                     "cloud_available": False,
                     "latency": 0,
-                    "bandwidth": 0
+                    "bandwidth": 0,
+                    "source": "probe"
                 }
         except:
             return {
                 "cloud_available": False,
                 "latency": 0,
-                "bandwidth": 0
+                "bandwidth": 0,
+                "source": "probe"
             }
+
+    def _refresh_status(self):
+        try:
+            next_status = self._probe_status()
+            next_status["last_checked"] = time.time()
+            with self._lock:
+                self._status = next_status
+                self._last_checked = next_status["last_checked"]
+        finally:
+            with self._lock:
+                self._refreshing = False
+
+    def _start_background_refresh(self):
+        with self._lock:
+            if self._refreshing:
+                return
+            self._refreshing = True
+
+        thread = threading.Thread(
+            target=self._refresh_status,
+            name="network-status-refresh",
+            daemon=True,
+        )
+        thread.start()
+
+    def get_status(self):
+        """获取缓存网络状态，并在缓存过期时后台刷新。"""
+        now = time.time()
+        with self._lock:
+            status = dict(self._status)
+            cache_age = now - self._last_checked if self._last_checked else None
+            is_stale = (
+                self._last_checked == 0
+                or cache_age is None
+                or cache_age > self.CACHE_TTL_SECONDS
+            )
+
+        if is_stale:
+            self._start_background_refresh()
+            status["source"] = "cache_refreshing"
+        else:
+            status["source"] = "cache"
+
+        status["cache_age_seconds"] = cache_age
+        return status
 
 # 创建网络监控器
 network_monitor = NetworkMonitor()
@@ -984,17 +1045,47 @@ def analyze_complexity(req: ComplexityAnalysisRequest):
 @app.post("/complexity/route")
 def get_routing_recommendation(req: ComplexityAnalysisRequest):
     """获取路由推荐"""
+    request_start = time.perf_counter()
+    request_id = f"complexity-route-{int(time.time() * 1000)}"
     try:
+        print(f"[{request_id}] /complexity/route start query={req.query[:80]!r}")
+        network_start = time.perf_counter()
         network_status = network_monitor.get_status()
-        routing_result = complexity_analyzer.route_based_on_complexity(req.query, network_status)
+        print(
+            f"[{request_id}] network_status done "
+            f"elapsed_ms={(time.perf_counter() - network_start) * 1000:.1f} "
+            f"status={network_status}"
+        )
 
-        return {
+        analysis_start = time.perf_counter()
+        routing_result = complexity_analyzer.route_based_on_complexity(req.query, network_status)
+        print(
+            f"[{request_id}] analysis done "
+            f"elapsed_ms={(time.perf_counter() - analysis_start) * 1000:.1f} "
+            f"total_elapsed_ms={(time.perf_counter() - request_start) * 1000:.1f} "
+            f"result={{'route': {routing_result.get('route')!r}, "
+            f"'base_route': {routing_result.get('base_route')!r}, "
+            f"'confidence': {routing_result.get('confidence')!r}, "
+            f"'analysis': {routing_result.get('complexity_analysis')!r}}}"
+        )
+
+        response_payload = {
             "success": True,
             "query": req.query,
             "network_status": network_status,
             "routing_result": routing_result
         }
+        print(
+            f"[{request_id}] response ready "
+            f"total_elapsed_ms={(time.perf_counter() - request_start) * 1000:.1f}"
+        )
+        return response_payload
     except Exception as e:
+        print(
+            f"[{request_id}] failed "
+            f"total_elapsed_ms={(time.perf_counter() - request_start) * 1000:.1f} "
+            f"error={e!r}"
+        )
         raise HTTPException(status_code=500, detail=f"路由推荐失败: {str(e)}")
 
 @app.get("/complexity/status")

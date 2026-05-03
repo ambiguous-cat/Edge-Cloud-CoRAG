@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import json
 import os
+import threading
 from logging import getLogger
 from dotenv import load_dotenv
 
@@ -17,11 +18,30 @@ load_dotenv()  # 加载.env文件
 
 logger = getLogger(__name__)
 
+class EmbeddingModelAdapter:
+    """Adapter for the project-level embedding.get_embedding function."""
+
+    def embed_query(self, query: str) -> List[float]:
+        from embedding import get_embedding
+
+        embedding = get_embedding(query)
+        if embedding is None or isinstance(embedding, int):
+            raise RuntimeError("embedding.get_embedding returned no vector")
+        return embedding
+
 class ComplexityAnalyzer:
     """查询复杂度分析器"""
 
+    SIMPLE_QUERIES = (
+        "你好", "谢谢", "再见", "是的", "不是",
+        "什么是", "如何", "为什么", "在哪里", "什么时候"
+    )
+
     def __init__(self, embedding_model=None):
-        self.embedding_model = embedding_model
+        self.embedding_model = embedding_model or EmbeddingModelAdapter()
+        self._simple_embedding_cache = {}
+        self._simple_embedding_lock = threading.Lock()
+        self._simple_embedding_warming = False
 
         # 从环境变量读取复杂度权重配置，如果未设置则使用默认值
         self.complexity_weights = self._load_complexity_weights()
@@ -47,6 +67,61 @@ class ComplexityAnalyzer:
 
         logger.info("复杂度分析器初始化完成")
         logger.info(f"复杂度权重配置: {self.complexity_weights}")
+
+    def _to_embedding_array(self, embedding: List[float]) -> np.ndarray:
+        embedding_array = np.array(embedding, dtype=float).reshape(1, -1)
+        if not np.all(np.isfinite(embedding_array)):
+            raise ValueError("embedding contains non-finite values")
+        return embedding_array
+
+    def _warm_simple_embedding_cache(self):
+        try:
+            for simple_query in self.SIMPLE_QUERIES:
+                with self._simple_embedding_lock:
+                    if simple_query in self._simple_embedding_cache:
+                        continue
+
+                embedding = self.embedding_model.embed_query(simple_query)
+                embedding_array = self._to_embedding_array(embedding)
+
+                with self._simple_embedding_lock:
+                    self._simple_embedding_cache[simple_query] = embedding_array
+
+            logger.info(
+                "简单查询嵌入缓存预热完成: %s/%s",
+                len(self._simple_embedding_cache),
+                len(self.SIMPLE_QUERIES),
+            )
+        except Exception as e:
+            logger.warning(f"简单查询嵌入缓存预热失败: {e}")
+        finally:
+            with self._simple_embedding_lock:
+                self._simple_embedding_warming = False
+
+    def _start_simple_embedding_warmup(self):
+        with self._simple_embedding_lock:
+            if (
+                self._simple_embedding_warming
+                or len(self._simple_embedding_cache) == len(self.SIMPLE_QUERIES)
+            ):
+                return
+            self._simple_embedding_warming = True
+
+        thread = threading.Thread(
+            target=self._warm_simple_embedding_cache,
+            name="complexity-simple-embedding-warmup",
+            daemon=True,
+        )
+        thread.start()
+
+    def _get_cached_simple_embeddings(self) -> List[np.ndarray]:
+        self._start_simple_embedding_warmup()
+        with self._simple_embedding_lock:
+            return [
+                embedding
+                for query, embedding in self._simple_embedding_cache.items()
+                if query in self.SIMPLE_QUERIES
+            ]
 
     def _load_complexity_weights(self) -> Dict[str, float]:
         """
@@ -470,35 +545,37 @@ class ComplexityAnalyzer:
 
             # 获取查询的嵌入向量
             embedding = self.embedding_model.embed_query(query)
-            embedding = np.array(embedding).reshape(1, -1)
+            embedding = self._to_embedding_array(embedding)
 
             # 计算向量的统计特征
-            vector_variance = np.var(embedding)
-            vector_mean = np.mean(np.abs(embedding))
+            vector_variance = float(np.var(embedding))
+            vector_mean = float(np.mean(np.abs(embedding)))
 
-            # 计算信息熵
-            normalized_embedding = embedding / (np.sum(embedding) + 1e-8)
-            entropy_score = -np.sum(normalized_embedding * np.log(normalized_embedding + 1e-8))
-
-            # 与简单查询的对比分析
-            simple_queries = [
-                "你好", "谢谢", "再见", "是的", "不是",
-                "什么是", "如何", "为什么", "在哪里", "什么时候"
-            ]
+            # 计算信息熵。嵌入向量可包含负值，需先转成非负分布再计算熵。
+            abs_embedding = np.abs(embedding)
+            abs_sum = float(np.sum(abs_embedding))
+            if abs_sum <= 1e-12:
+                entropy_score = 0.0
+            else:
+                normalized_embedding = abs_embedding / abs_sum
+                entropy_score = float(
+                    -np.sum(
+                        normalized_embedding * np.log(normalized_embedding + 1e-12)
+                    )
+                )
 
             similarities = []
-            for simple_q in simple_queries:
+            for simple_embedding in self._get_cached_simple_embeddings():
                 try:
-                    simple_embedding = self.embedding_model.embed_query(simple_q)
-                    simple_embedding = np.array(simple_embedding).reshape(1, -1)
-                    similarity = cosine_similarity(embedding, simple_embedding)[0][0]
-                    similarities.append(similarity)
-                except:
+                    similarity = float(cosine_similarity(embedding, simple_embedding)[0][0])
+                    if np.isfinite(similarity):
+                        similarities.append(similarity)
+                except Exception:
                     continue
 
             if similarities:
-                avg_similarity = np.mean(similarities)
-                complexity_from_similarity = 1 - avg_similarity
+                avg_similarity = float(np.mean(similarities))
+                complexity_from_similarity = max(0.0, min(1.0, 1 - avg_similarity))
             else:
                 complexity_from_similarity = 0.5
 
@@ -510,7 +587,11 @@ class ComplexityAnalyzer:
                 complexity_from_similarity * 0.3            # 与简单查询的差异 (30%)
             )
 
-            return min(1.0, semantic_complexity)
+            if not np.isfinite(semantic_complexity):
+                logger.warning("语义深度分析产生非有限值，返回默认值0.5")
+                return 0.5
+
+            return max(0.0, min(1.0, float(semantic_complexity)))
 
         except Exception as e:
             logger.warning(f"语义深度分析失败: {e}")

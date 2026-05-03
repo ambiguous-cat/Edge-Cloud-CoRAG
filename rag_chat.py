@@ -17,6 +17,35 @@ import chat_model
 load_dotenv()
 DEFAULT_MODEL_TYPE = os.getenv("RAG_DEFAULT_MODEL", "qwen3:1.7b").strip() or "qwen3:1.7b"
 
+SYSTEM_PROMPT_WITH_CONTEXT = """你是一个面向科研场景的端云协同 RAG 智能助手，擅长阅读、比较和综合科研资料。你的回答应严谨、清晰、实事求是。
+
+当前系统已经为用户问题提供了一组检索上下文。请先判断这些上下文与用户问题是否相关，再决定如何使用它们。
+
+请遵循以下原则：
+1. 如果上下文与问题高度相关，请优先基于上下文回答，并结合你的通用知识进行必要解释。
+2. 如果上下文只部分相关，请明确说明哪些信息来自上下文、哪些是基于一般知识的补充。
+3. 如果上下文与问题基本无关，请明确指出“当前检索到的上下文与问题关联较弱”，不要强行引用无关内容。
+4. 不要编造上下文中不存在的论文结论、实验结果、指标、作者观点或数据。
+5. 当引用上下文时，请使用简洁自然的方式说明来源，例如“根据检索片段中的描述……”或“某篇 arXiv 摘要提到……”。
+6. 对科研问题，优先给出结构化回答：核心结论、依据、局限性、可进一步验证的方向。
+7. 如果问题需要最新研究或外部资料，而当前上下文不足，请明确说明信息不足，并建议需要补充哪些资料。
+8. 默认使用中文回答；保留必要的英文术语、模型名、论文名、数据集名和方法名。"""
+
+
+SYSTEM_PROMPT_WITHOUT_CONTEXT = """你是一个面向科研场景的端云协同 RAG 智能助手，擅长解释科研概念、梳理方法脉络和提出研究建议。你的回答应严谨、清晰、实事求是。
+
+当前没有可用的检索上下文。请基于你的通用知识回答用户问题，但必须清楚地区分“已有把握的通用知识”和“需要进一步检索或验证的信息”。
+
+请遵循以下原则：
+1. 如果你能基于通用知识可靠回答，请直接回答，并保持表述审慎。
+2. 如果问题依赖特定论文、实验数据、最新进展、私有知识库内容或用户未提供的材料，请明确说明当前信息不足，且目前没有相关上下文可供依据。
+3. 不要假装看过不存在的上下文，不要编造论文、数据、引用、实验结果或具体来源。
+4. 可以给出合理的分析框架、可能方向或检索关键词，但要说明这些是建议而非已验证结论。
+5. 对科研问题，优先给出结构化回答：已知信息、可能解释、局限性、下一步建议。
+6. 如果用户的问题过于宽泛，请先给出概括性回答，并指出可以通过补充领域、任务、论文或数据集来获得更精确回答。
+7. 默认使用中文回答；保留必要的英文术语、模型名、论文名、数据集名和方法名。"""
+
+
 class RAGChatService:
     """RAG对话服务 - 简化版，仅支持流式响应"""
     
@@ -109,37 +138,21 @@ class RAGChatService:
         
         return "\n".join(context_parts)
     
-    def build_prompt(self, context: str, question: str) -> str:
-        """构建完整的prompt，根据上下文内容使用不同的提示词"""
+    def build_prompt(self, context: str, question: str) -> Tuple[str, str]:
+        """构建system和user消息，根据上下文内容使用不同的系统提示词"""
         
         # 检查是否有有效的上下文内容
         has_valid_context = context and context.strip() and len(context.strip()) > 0
         print(f"DEBUG: build_prompt - 上下文长度: {len(context) if context else 0}, 有效上下文: {has_valid_context}")
         
         if has_valid_context:
-            # 有相关文档时的提示词
             print("DEBUG: 使用RAG模式提示词（有相关文档）")
-            system_prompt = """你是一个智能助手，基于提供的上下文信息来回答用户的问题。
-
-请遵循以下原则：
-1. 基于上下文信息准确回答问题，优先使用上下文中的信息
-2. 如果需要，可以引用上下文中的具体内容
-3. 用中文回答问题
-4. 专门的学术英语可以直接用英文"""
-            
-            return f"{system_prompt}\n\n上下文信息：\n{context}\n\n问题：{question}"
+            user_prompt = f"请回答用户问题。\n\n用户问题：\n{question}\n\n检索上下文：\n{context}"
+            return SYSTEM_PROMPT_WITH_CONTEXT, user_prompt
         else:
-            # 没有相关文档时的提示词
             print("DEBUG: 使用直接对话模式提示词（无相关文档）")
-            system_prompt = """你是一个智能助手，请直接回答用户的问题。
-
-请遵循以下原则：
-1. 基于你的知识储备提供准确、有用的回答
-2. 如果问题涉及特定领域或最新信息，请说明可能需要查阅相关资料
-3. 保持回答的客观性和准确性
-4. 用中文回答问题"""
-            
-            return f"{system_prompt}\n\n问题：{question}"
+            user_prompt = f"请回答用户问题。\n\n用户问题：\n{question}"
+            return SYSTEM_PROMPT_WITHOUT_CONTEXT, user_prompt
     
     def rag_chat_stream(self, query: str, top_k: int = 3, 
                        history: List[Dict[str, str]] = None, similarity_threshold: float = 0.0, **kwargs) -> Generator[str, None, None]:
@@ -179,12 +192,12 @@ class RAGChatService:
         
         # 3. 构建prompt
         prompt_start = time.time()
-        prompt = self.build_prompt(context, query)
+        system_prompt, prompt = self.build_prompt(context, query)
         prompt_time = time.time() - prompt_start
         print(f"DEBUG: Prompt构建耗时: {prompt_time:.3f}秒，最终prompt长度: {len(prompt)}字符")
         
         # 4. 构建聊天消息格式，包含历史记录
-        messages = []
+        messages = [{"role": "system", "content": system_prompt}]
         
         # 添加历史记录
         if history and len(history) > 0:
@@ -250,12 +263,12 @@ class RAGChatService:
         
         # 3. 构建prompt
         prompt_start = time.time()
-        prompt = self.build_prompt(context, query)
+        system_prompt, prompt = self.build_prompt(context, query)
         prompt_time = time.time() - prompt_start
         print(f"DEBUG: Prompt构建耗时: {prompt_time:.3f}秒")
         
         # 4. 构建聊天消息格式，包含历史记录
-        messages = []
+        messages = [{"role": "system", "content": system_prompt}]
         
         # 添加历史记录
         if history and len(history) > 0:
@@ -356,7 +369,9 @@ class RAGChatService:
         """
         try:
             # 构建消息列表
-            messages = []
+            context = self.format_context(documents) if documents and len(documents) > 0 else ""
+            system_prompt, prompt = self.build_prompt(context, message)
+            messages = [{"role": "system", "content": system_prompt}]
             
             # 添加历史记录
             if history and len(history) > 0:
@@ -365,13 +380,11 @@ class RAGChatService:
             if documents and len(documents) > 0:
                 # 如果有文档，使用文档信息构建上下文
                 print(f"DEBUG: simple_chat使用文档模式，文档数量: {len(documents)}")
-                context = self.format_context(documents)
-                prompt = self.build_prompt(context, message)
                 messages.append({"role": "user", "content": prompt})
             else:
                 # 如果没有文档，直接添加用户消息
                 print(f"DEBUG: simple_chat使用直接对话模式，documents={documents}")
-                messages.append({"role": "user", "content": message})
+                messages.append({"role": "user", "content": prompt})
 
             print(messages)
 

@@ -27,8 +27,16 @@ interface RagChatResponse {
 
 interface StreamEventPayload extends Record<string, unknown> {
   type?: unknown
+  tool?: unknown
   content?: unknown
   done?: unknown
+  elapsed?: unknown
+  queries?: unknown
+  query?: unknown
+  reason?: unknown
+  errors?: unknown
+  papers?: unknown
+  paper_search?: unknown
   response_time?: unknown
   char_count?: unknown
   estimated_tokens?: unknown
@@ -40,6 +48,11 @@ interface StreamEventPayload extends Record<string, unknown> {
 
 export type RagStreamEvent =
   | RagStreamContentEvent
+  | RagStreamToolStartEvent
+  | RagStreamToolProgressEvent
+  | RagStreamToolQueryEvent
+  | RagStreamToolResultEvent
+  | RagStreamRetrievalResultEvent
   | RagStreamInfoEvent
   | RagStreamErrorEvent
   | RagStreamDoneEvent
@@ -54,6 +67,61 @@ export interface RagStreamContentEvent extends RagStreamBaseEvent {
   content: string
 }
 
+export interface RagPaper {
+  id?: string
+  title: string
+  authors: string[]
+  published?: string
+  summary: string
+  url?: string
+  source?: string
+  matchedQuery?: string
+  similarityScore?: number
+  content?: string
+}
+
+export interface PaperSearchInfo {
+  queries: string[]
+  paperCount?: number
+  papers: RagPaper[]
+  localDocuments: RetrievedDocument[]
+  errors: string[]
+}
+
+export interface RagStreamToolStartEvent extends RagStreamBaseEvent {
+  type: 'tool_start'
+  tool: string
+  content: string
+}
+
+export interface RagStreamToolProgressEvent extends RagStreamBaseEvent {
+  type: 'tool_progress'
+  tool: string
+  content: string
+  elapsed?: number
+}
+
+export interface RagStreamToolQueryEvent extends RagStreamBaseEvent {
+  type: 'tool_query'
+  tool: string
+  queries: string[]
+  reason?: string
+  errors: string[]
+}
+
+export interface RagStreamToolResultEvent extends RagStreamBaseEvent {
+  type: 'tool_result'
+  tool: string
+  papers: RagPaper[]
+}
+
+export interface RagStreamRetrievalResultEvent extends RagStreamBaseEvent {
+  type: 'retrieval_result'
+  tool: string
+  query?: string
+  retrievedDocuments: RetrievedDocument[]
+}
+
 export interface RagStreamInfoEvent extends RagStreamBaseEvent {
   type: 'info'
   content: string
@@ -64,6 +132,7 @@ export interface RagStreamInfoEvent extends RagStreamBaseEvent {
   retrievedDocuments: RetrievedDocument[]
   contextLength?: number
   filterStats?: RetrievalFilterStats
+  paperSearch?: PaperSearchInfo
 }
 
 export interface RagStreamErrorEvent extends RagStreamBaseEvent {
@@ -77,9 +146,12 @@ export interface RagStreamDoneEvent extends RagStreamBaseEvent {
 }
 
 export interface RetrievedDocument {
+  rank?: number
   title: string
   content: string
   similarityScore?: number
+  embeddingScore?: number
+  rerankScore?: number
   documentId?: number
   chunkId?: number
   chunkIndex?: number
@@ -140,6 +212,16 @@ function toOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined
 }
 
+function toStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(
+    (item): item is string => typeof item === 'string' && item.trim().length > 0,
+  )
+}
+
 function normalizeRetrievedDocuments(value: unknown): RetrievedDocument[] {
   if (!Array.isArray(value)) {
     return []
@@ -150,13 +232,39 @@ function normalizeRetrievedDocuments(value: unknown): RetrievedDocument[] {
       return item !== null && typeof item === 'object' && !Array.isArray(item)
     })
     .map((item, index) => ({
+      rank: toOptionalNumber(item.rank),
       title: toOptionalString(item.title) ?? `文档 ${index + 1}`,
       content: toContentString(item.content),
       similarityScore: toOptionalNumber(item.similarity_score),
+      embeddingScore: toOptionalNumber(item.embedding_score),
+      rerankScore: toOptionalNumber(item.rerank_score),
       documentId:
         toOptionalNumber(item.document_id) ?? toOptionalNumber(item.doc_id),
       chunkId: toOptionalNumber(item.chunk_id),
       chunkIndex: toOptionalNumber(item.chunk_index),
+    }))
+}
+
+function normalizePapers(value: unknown): RagPaper[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => {
+      return item !== null && typeof item === 'object' && !Array.isArray(item)
+    })
+    .map((item, index) => ({
+      id: toOptionalString(item.id),
+      title: toOptionalString(item.title) ?? `论文 ${index + 1}`,
+      authors: toStringList(item.authors),
+      published: toOptionalString(item.published),
+      summary: toContentString(item.summary),
+      url: toOptionalString(item.url),
+      source: toOptionalString(item.source),
+      matchedQuery: toOptionalString(item.matched_query),
+      similarityScore: toOptionalNumber(item.similarity_score),
+      content: toOptionalString(item.content),
     }))
 }
 
@@ -171,6 +279,21 @@ function normalizeFilterStats(value: unknown): RetrievalFilterStats | undefined 
     originalCount: toOptionalNumber(stats.original_count),
     filteredCount: toOptionalNumber(stats.filtered_count),
     acceptedCount: toOptionalNumber(stats.accepted_count),
+  }
+}
+
+function normalizePaperSearchInfo(value: unknown): PaperSearchInfo | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+
+  const info = value as Record<string, unknown>
+  return {
+    queries: toStringList(info.queries),
+    paperCount: toOptionalNumber(info.paper_count),
+    papers: normalizePapers(info.papers),
+    localDocuments: normalizeRetrievedDocuments(info.local_documents),
+    errors: toStringList(info.errors),
   }
 }
 
@@ -236,6 +359,51 @@ function normalizeEvents(payload: StreamEventPayload): RagStreamEvent[] {
       retrievedDocuments: normalizeRetrievedDocuments(payload.retrieved_documents),
       contextLength: toNumber(payload.context_length),
       filterStats: normalizeFilterStats(payload.filter_stats),
+      paperSearch: normalizePaperSearchInfo(payload.paper_search),
+    })
+  } else if (typeValue === 'tool_start') {
+    events.push({
+      type: 'tool_start',
+      tool: toOptionalString(payload.tool) ?? 'unknown',
+      content,
+      done,
+      raw: payload,
+    })
+  } else if (typeValue === 'tool_progress') {
+    events.push({
+      type: 'tool_progress',
+      tool: toOptionalString(payload.tool) ?? 'unknown',
+      content,
+      elapsed: toNumber(payload.elapsed),
+      done,
+      raw: payload,
+    })
+  } else if (typeValue === 'tool_query') {
+    events.push({
+      type: 'tool_query',
+      tool: toOptionalString(payload.tool) ?? 'unknown',
+      queries: toStringList(payload.queries),
+      reason: toOptionalString(payload.reason),
+      errors: toStringList(payload.errors),
+      done,
+      raw: payload,
+    })
+  } else if (typeValue === 'tool_result') {
+    events.push({
+      type: 'tool_result',
+      tool: toOptionalString(payload.tool) ?? 'unknown',
+      papers: normalizePapers(payload.papers),
+      done,
+      raw: payload,
+    })
+  } else if (typeValue === 'retrieval_result') {
+    events.push({
+      type: 'retrieval_result',
+      tool: toOptionalString(payload.tool) ?? 'unknown',
+      query: toOptionalString(payload.query),
+      retrievedDocuments: normalizeRetrievedDocuments(payload.retrieved_documents),
+      done,
+      raw: payload,
     })
   } else if (typeValue === 'error') {
     events.push({
@@ -258,7 +426,7 @@ function normalizeEvents(payload: StreamEventPayload): RagStreamEvent[] {
       done: true,
       raw: payload,
     })
-  } else {
+  } else if (content) {
     events.push({
       type: 'content',
       content,

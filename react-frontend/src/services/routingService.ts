@@ -1,127 +1,133 @@
-import type { ApiTarget, RouteMode } from './apiConfig'
-import { fetchApiHealthSnapshot } from './systemService'
-import type { ChatHistoryMessage } from './chatService'
-import { getHttpClient } from './httpClient'
+import { API_TIMEOUT_MS, type ApiTarget, type RouteMode } from "./apiConfig";
+import { fetchApiHealthSnapshot } from "./systemService";
+import type { ChatHistoryMessage } from "./chatService";
+import { getHttpClient } from "./httpClient";
 
-const LOCAL_LABEL = '本地'
-const CLOUD_LABEL = '云端'
+const LOCAL_LABEL = "本地";
+const CLOUD_LABEL = "云端";
 
-const ROUTE_CACHE = new Map<string, ApiTarget>()
+const ROUTE_CACHE = new Map<string, ApiTarget>();
 
 interface PrivacyCheckResponse {
-  privacy_score?: unknown
-  is_privacy_risk?: unknown
+  privacy_score?: unknown;
+  is_privacy_risk?: unknown;
 }
 
 interface ComplexityRouteResponse {
-  success?: unknown
+  success?: unknown;
   routing_result?: {
-    route?: unknown
-    base_route?: unknown
-    explanation?: unknown
-    confidence?: unknown
-    recommendations?: unknown
+    route?: unknown;
+    base_route?: unknown;
+    explanation?: unknown;
+    confidence?: unknown;
+    recommendations?: unknown;
     complexity_analysis?: {
-      [key: string]: unknown
-    }
-  }
+      [key: string]: unknown;
+    };
+  };
 }
 
 interface ComplexityRouteRequest {
-  query: string
-  complexity_threshold: number
+  query: string;
+  complexity_threshold: number;
 }
 
 export interface RoutingSettings {
-  enableCacheCheck: boolean
-  enableNetworkCheck: boolean
-  enableComplexityCheck: boolean
-  enablePrivacyCheck: boolean
-  complexityThreshold: number
+  enableCacheCheck: boolean;
+  enableNetworkCheck: boolean;
+  enableComplexityCheck: boolean;
+  enablePrivacyCheck: boolean;
+  complexityThreshold: number;
 }
 
 export interface RoutingDecision {
-  target: ApiTarget
-  fallbackTarget?: ApiTarget
-  reason: string
-  reasonLabel: string
-  mode: 'manual' | 'auto'
-  localAvailable: boolean
-  cloudAvailable: boolean
-  complexityScore?: number
-  complexityAnalysis?: Record<string, number>
-  complexityRoute?: string
-  complexityBaseRoute?: string
-  complexityExplanation?: string
-  complexityConfidence?: number
-  complexityRecommendations?: string[]
-  privacyScore?: number
-  fromCache: boolean
+  target: ApiTarget;
+  fallbackTarget?: ApiTarget;
+  reason: string;
+  reasonLabel: string;
+  mode: "manual" | "auto";
+  localAvailable: boolean;
+  cloudAvailable: boolean;
+  complexityScore?: number;
+  complexityAnalysis?: Record<string, number>;
+  complexityRoute?: string;
+  complexityBaseRoute?: string;
+  complexityExplanation?: string;
+  complexityConfidence?: number;
+  complexityRecommendations?: string[];
+  privacyScore?: number;
+  privacyChecked: boolean;
+  fromCache: boolean;
 }
 
 export interface DecideRouteRequest {
-  routeMode: RouteMode
-  query: string
-  history: ChatHistoryMessage[]
-  settings: RoutingSettings
+  routeMode: RouteMode;
+  query: string;
+  history: ChatHistoryMessage[];
+  settings: RoutingSettings;
 }
 
 function normalizeScore(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function normalizeString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 function normalizeStringList(value: unknown): string[] {
   if (!Array.isArray(value)) {
-    return []
+    return [];
   }
 
   return value.filter(
-    (item): item is string => typeof item === 'string' && item.trim().length > 0,
-  )
+    (item): item is string =>
+      typeof item === "string" && item.trim().length > 0,
+  );
 }
 
-function normalizeScoreRecord(value: unknown): Record<string, number> | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return undefined
+function normalizeScoreRecord(
+  value: unknown,
+): Record<string, number> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
   }
 
-  const result: Record<string, number> = {}
+  const result: Record<string, number> = {};
   for (const [key, score] of Object.entries(value)) {
-    if (typeof score === 'number' && Number.isFinite(score)) {
-      result[key] = score
+    if (typeof score === "number" && Number.isFinite(score)) {
+      result[key] = score;
     }
   }
 
-  return Object.keys(result).length > 0 ? result : undefined
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function normalizeRouteToTarget(route: unknown): ApiTarget | null {
-  if (typeof route !== 'string') {
-    return null
+  if (typeof route !== "string") {
+    return null;
   }
 
-  if (route.startsWith('cloud')) {
-    return 'cloud'
+  if (route.startsWith("cloud")) {
+    return "cloud";
   }
 
-  if (route.startsWith('local')) {
-    return 'local'
+  if (route.startsWith("local")) {
+    return "local";
   }
 
-  return null
+  return null;
 }
 
 function cacheKey(query: string): string {
-  return query.trim().toLowerCase()
+  return query.trim().toLowerCase();
 }
 
 function getCacheTarget(query: string): ApiTarget | null {
-  const key = cacheKey(query)
-  return ROUTE_CACHE.get(key) ?? null
+  const key = cacheKey(query);
+  return ROUTE_CACHE.get(key) ?? null;
 }
 
 function isTargetAvailable(
@@ -129,11 +135,11 @@ function isTargetAvailable(
   localAvailable: boolean,
   cloudAvailable: boolean,
 ): boolean {
-  return target === 'local' ? localAvailable : cloudAvailable
+  return target === "local" ? localAvailable : cloudAvailable;
 }
 
 function getAlternateTarget(target: ApiTarget): ApiTarget {
-  return target === 'local' ? 'cloud' : 'local'
+  return target === "local" ? "cloud" : "local";
 }
 
 function selectFallbackTarget(
@@ -141,10 +147,10 @@ function selectFallbackTarget(
   localAvailable: boolean,
   cloudAvailable: boolean,
 ): ApiTarget | undefined {
-  const alternate = getAlternateTarget(target)
+  const alternate = getAlternateTarget(target);
   return isTargetAvailable(alternate, localAvailable, cloudAvailable)
     ? alternate
-    : undefined
+    : undefined;
 }
 
 function finalizeDecision(
@@ -153,22 +159,27 @@ function finalizeDecision(
   reasonLabel: string,
   localAvailable: boolean,
   cloudAvailable: boolean,
-  mode: 'manual' | 'auto',
+  mode: "manual" | "auto",
   options?: {
-    complexityScore?: number
-    complexityAnalysis?: Record<string, number>
-    complexityRoute?: string
-    complexityBaseRoute?: string
-    complexityExplanation?: string
-    complexityConfidence?: number
-    complexityRecommendations?: string[]
-    privacyScore?: number
-    fromCache?: boolean
+    complexityScore?: number;
+    complexityAnalysis?: Record<string, number>;
+    complexityRoute?: string;
+    complexityBaseRoute?: string;
+    complexityExplanation?: string;
+    complexityConfidence?: number;
+    complexityRecommendations?: string[];
+    privacyScore?: number;
+    privacyChecked?: boolean;
+    fromCache?: boolean;
   },
 ): RoutingDecision {
   return {
     target,
-    fallbackTarget: selectFallbackTarget(target, localAvailable, cloudAvailable),
+    fallbackTarget: selectFallbackTarget(
+      target,
+      localAvailable,
+      cloudAvailable,
+    ),
     reason,
     reasonLabel,
     mode,
@@ -182,31 +193,32 @@ function finalizeDecision(
     complexityConfidence: options?.complexityConfidence,
     complexityRecommendations: options?.complexityRecommendations,
     privacyScore: options?.privacyScore,
+    privacyChecked: options?.privacyChecked === true,
     fromCache: options?.fromCache === true,
-  }
+  };
 }
 
 async function evaluatePrivacyRisk(
   query: string,
   history: ChatHistoryMessage[],
 ): Promise<{ risk: boolean; score?: number }> {
-  const chatHistory = [...history, { role: 'user', content: query }]
+  const chatHistory = [...history, { role: "user", content: query }];
   try {
-    const { data } = await getHttpClient('local').post<PrivacyCheckResponse>(
-      '/privacy_check',
+    const { data } = await getHttpClient("local").post<PrivacyCheckResponse>(
+      "/privacy_check",
       {
         chat_history: chatHistory,
         get_details: false,
       },
-    )
+    );
 
-    const score = normalizeScore(data?.privacy_score)
+    const score = normalizeScore(data?.privacy_score);
     return {
       risk: data?.is_privacy_risk === true,
       score,
-    }
+    };
   } catch {
-    return { risk: false }
+    return { risk: false };
   }
 }
 
@@ -214,29 +226,51 @@ async function evaluateComplexityRoute(
   query: string,
   complexityThreshold: number,
 ): Promise<{
-  target: ApiTarget | null
-  score?: number
-  analysis?: Record<string, number>
-  route?: string
-  baseRoute?: string
-  explanation?: string
-  confidence?: number
-  recommendations?: string[]
+  target: ApiTarget | null;
+  score?: number;
+  analysis?: Record<string, number>;
+  route?: string;
+  baseRoute?: string;
+  explanation?: string;
+  confidence?: number;
+  recommendations?: string[];
 }> {
+  const startedAt = performance.now();
+  const requestId = `complexity-route-${Date.now()}`;
+  console.info("[complexity-route] start", {
+    requestId,
+    queryPreview: query.slice(0, 80),
+    complexityThreshold,
+    timeoutMs: API_TIMEOUT_MS,
+  });
+
   try {
-    const { data } = await getHttpClient('local').post<ComplexityRouteResponse>(
-      '/complexity/route',
+    const { data } = await getHttpClient("local").post<ComplexityRouteResponse>(
+      "/complexity/route",
       {
         query,
         complexity_threshold: complexityThreshold,
       } satisfies ComplexityRouteRequest,
-    )
+    );
 
-    const routingResult = data?.routing_result
-    const route = normalizeString(routingResult?.route)
-    const analysis = normalizeScoreRecord(routingResult?.complexity_analysis)
-    const routeTarget = normalizeRouteToTarget(route)
-    const score = normalizeScore(analysis?.total_complexity)
+    const elapsedMs = Math.round(performance.now() - startedAt);
+    const routingResult = data?.routing_result;
+    const route = normalizeString(routingResult?.route);
+    const analysis = normalizeScoreRecord(routingResult?.complexity_analysis);
+    const routeTarget = normalizeRouteToTarget(route);
+    const score = normalizeScore(analysis?.total_complexity);
+    console.info("[complexity-route] success", {
+      requestId,
+      elapsedMs,
+      raw: data,
+    });
+    console.info("[complexity-route] parsed", {
+      requestId,
+      route,
+      routeTarget,
+      analysis,
+      score,
+    });
 
     return {
       target: routeTarget,
@@ -247,11 +281,18 @@ async function evaluateComplexityRoute(
       explanation: normalizeString(routingResult?.explanation),
       confidence: normalizeScore(routingResult?.confidence),
       recommendations: normalizeStringList(routingResult?.recommendations),
-    }
-  } catch {
+    };
+  } catch (error) {
+    const elapsedMs = Math.round(performance.now() - startedAt);
+    console.error("[complexity-route] failed", {
+      requestId,
+      elapsedMs,
+      timeoutMs: API_TIMEOUT_MS,
+      error,
+    });
     return {
       target: null,
-    }
+    };
   }
 }
 
@@ -261,31 +302,38 @@ function chooseByAvailability(
   cloudAvailable: boolean,
 ): ApiTarget {
   if (isTargetAvailable(preferred, localAvailable, cloudAvailable)) {
-    return preferred
+    return preferred;
   }
 
-  const alternate = getAlternateTarget(preferred)
+  const alternate = getAlternateTarget(preferred);
   if (isTargetAvailable(alternate, localAvailable, cloudAvailable)) {
-    return alternate
+    return alternate;
   }
 
-  return preferred
+  return preferred;
 }
 
 function targetLabel(target: ApiTarget): string {
-  return target === 'local' ? LOCAL_LABEL : CLOUD_LABEL
+  return target === "local" ? LOCAL_LABEL : CLOUD_LABEL;
 }
 
-function buildFallbackReasonLabel(preferred: ApiTarget, actual: ApiTarget): string {
-  return `目标 ${targetLabel(preferred)} 不可用，自动回退到 ${targetLabel(actual)}`
+function buildFallbackReasonLabel(
+  preferred: ApiTarget,
+  actual: ApiTarget,
+): string {
+  return `目标 ${targetLabel(preferred)} 不可用，自动回退到 ${targetLabel(actual)}`;
 }
 
 export function rememberRouteDecision(query: string, target: ApiTarget): void {
-  const key = cacheKey(query)
+  const key = cacheKey(query);
   if (!key) {
-    return
+    return;
   }
-  ROUTE_CACHE.set(key, target)
+  ROUTE_CACHE.set(key, target);
+}
+
+export function clearRouteDecisionCache(): void {
+  ROUTE_CACHE.clear();
 }
 
 export async function decideRoute({
@@ -294,107 +342,177 @@ export async function decideRoute({
   history,
   settings,
 }: DecideRouteRequest): Promise<RoutingDecision> {
-  if (routeMode === 'local' || routeMode === 'cloud') {
+  if (routeMode === "local" || routeMode === "cloud") {
     return finalizeDecision(
       routeMode,
-      'manual_selected',
+      "manual_selected",
       `手动选择${targetLabel(routeMode)}模式`,
       true,
       true,
-      'manual',
-    )
+      "manual",
+    );
   }
 
-  let localAvailable = true
-  let cloudAvailable = true
+  let localAvailable = true;
+  let cloudAvailable = true;
 
   if (settings.enableNetworkCheck) {
-    const networkSnapshot = await fetchApiHealthSnapshot()
-    localAvailable = networkSnapshot.localApiOnline
-    cloudAvailable = networkSnapshot.cloudApiOnline
+    const networkSnapshot = await fetchApiHealthSnapshot();
+    localAvailable = networkSnapshot.localApiOnline;
+    cloudAvailable = networkSnapshot.cloudApiOnline;
   }
 
   if (settings.enableCacheCheck) {
-    const cachedTarget = getCacheTarget(query)
+    const cachedTarget = getCacheTarget(query);
     if (cachedTarget) {
       const actualTarget = chooseByAvailability(
         cachedTarget,
         localAvailable,
         cloudAvailable,
-      )
+      );
       const reasonLabel =
         actualTarget === cachedTarget
           ? `命中缓存路由：${targetLabel(actualTarget)}`
-          : buildFallbackReasonLabel(cachedTarget, actualTarget)
+          : buildFallbackReasonLabel(cachedTarget, actualTarget);
       return finalizeDecision(
         actualTarget,
-        'cache_hit',
+        "cache_hit",
         reasonLabel,
         localAvailable,
         cloudAvailable,
-        'auto',
+        "auto",
         { fromCache: true },
-      )
+      );
     }
   }
 
   if (settings.enablePrivacyCheck) {
-    const privacy = await evaluatePrivacyRisk(query, history)
+    const privacy = await evaluatePrivacyRisk(query, history);
     if (privacy.risk) {
       const actualTarget = chooseByAvailability(
-        'local',
+        "local",
         localAvailable,
         cloudAvailable,
-      )
+      );
       const reasonLabel =
-        actualTarget === 'local'
-          ? '命中隐私保护策略，优先本地处理'
-          : buildFallbackReasonLabel('local', actualTarget)
+        actualTarget === "local"
+          ? "命中隐私保护策略，优先本地处理"
+          : buildFallbackReasonLabel("local", actualTarget);
       return finalizeDecision(
         actualTarget,
-        'privacy_protection',
+        "privacy_protection",
         reasonLabel,
         localAvailable,
         cloudAvailable,
-        'auto',
-        { privacyScore: privacy.score },
-      )
+        "auto",
+        { privacyScore: privacy.score, privacyChecked: true },
+      );
     }
+
+    if (settings.enableComplexityCheck) {
+      const complexity = await evaluateComplexityRoute(
+        query,
+        settings.complexityThreshold,
+      );
+      let preferredTarget: ApiTarget = "cloud";
+      if (complexity.score !== undefined) {
+        preferredTarget =
+          complexity.score > settings.complexityThreshold ? "cloud" : "local";
+      } else if (complexity.target) {
+        preferredTarget = complexity.target;
+      }
+
+      const actualTarget = chooseByAvailability(
+        preferredTarget,
+        localAvailable,
+        cloudAvailable,
+      );
+      const scoreDetail =
+        complexity.score !== undefined
+          ? `（复杂度 ${complexity.score.toFixed(2)}，阈值 ${settings.complexityThreshold.toFixed(2)}）`
+          : "";
+      const reasonLabel =
+        actualTarget === preferredTarget
+          ? `复杂度策略建议${targetLabel(actualTarget)}处理${scoreDetail}`
+          : `${buildFallbackReasonLabel(preferredTarget, actualTarget)}${scoreDetail}`;
+      return finalizeDecision(
+        actualTarget,
+        "complexity_routing",
+        reasonLabel,
+        localAvailable,
+        cloudAvailable,
+        "auto",
+        {
+          complexityScore: complexity.score,
+          complexityAnalysis: complexity.analysis,
+          complexityRoute: complexity.route,
+          complexityBaseRoute: complexity.baseRoute,
+          complexityExplanation: complexity.explanation,
+          complexityConfidence: complexity.confidence,
+          complexityRecommendations: complexity.recommendations,
+          privacyScore: privacy.score,
+          privacyChecked: true,
+        },
+      );
+    }
+
+    const defaultPreferredTarget: ApiTarget = cloudAvailable
+      ? "cloud"
+      : "local";
+    const defaultTarget = chooseByAvailability(
+      defaultPreferredTarget,
+      localAvailable,
+      cloudAvailable,
+    );
+    const reasonLabel =
+      defaultTarget === defaultPreferredTarget
+        ? `默认策略：优先${targetLabel(defaultTarget)}`
+        : buildFallbackReasonLabel(defaultPreferredTarget, defaultTarget);
+
+    return finalizeDecision(
+      defaultTarget,
+      "default_auto",
+      reasonLabel,
+      localAvailable,
+      cloudAvailable,
+      "auto",
+      { privacyScore: privacy.score, privacyChecked: true },
+    );
   }
 
   if (settings.enableComplexityCheck) {
     const complexity = await evaluateComplexityRoute(
       query,
       settings.complexityThreshold,
-    )
-    let preferredTarget: ApiTarget = 'cloud'
+    );
+    let preferredTarget: ApiTarget = "cloud";
     if (complexity.score !== undefined) {
       preferredTarget =
-        complexity.score > settings.complexityThreshold ? 'cloud' : 'local'
+        complexity.score > settings.complexityThreshold ? "cloud" : "local";
     } else if (complexity.target) {
-      preferredTarget = complexity.target
+      preferredTarget = complexity.target;
     }
 
     const actualTarget = chooseByAvailability(
       preferredTarget,
       localAvailable,
       cloudAvailable,
-    )
+    );
     const scoreDetail =
       complexity.score !== undefined
         ? `（复杂度 ${complexity.score.toFixed(2)}，阈值 ${settings.complexityThreshold.toFixed(2)}）`
-        : ''
+        : "";
     const reasonLabel =
       actualTarget === preferredTarget
         ? `复杂度策略建议${targetLabel(actualTarget)}处理${scoreDetail}`
-        : `${buildFallbackReasonLabel(preferredTarget, actualTarget)}${scoreDetail}`
+        : `${buildFallbackReasonLabel(preferredTarget, actualTarget)}${scoreDetail}`;
     return finalizeDecision(
       actualTarget,
-      'complexity_routing',
+      "complexity_routing",
       reasonLabel,
       localAvailable,
       cloudAvailable,
-      'auto',
+      "auto",
       {
         complexityScore: complexity.score,
         complexityAnalysis: complexity.analysis,
@@ -404,26 +522,26 @@ export async function decideRoute({
         complexityConfidence: complexity.confidence,
         complexityRecommendations: complexity.recommendations,
       },
-    )
+    );
   }
 
-  const defaultPreferredTarget: ApiTarget = cloudAvailable ? 'cloud' : 'local'
+  const defaultPreferredTarget: ApiTarget = cloudAvailable ? "cloud" : "local";
   const defaultTarget = chooseByAvailability(
     defaultPreferredTarget,
     localAvailable,
     cloudAvailable,
-  )
+  );
   const reasonLabel =
     defaultTarget === defaultPreferredTarget
       ? `默认策略：优先${targetLabel(defaultTarget)}`
-      : buildFallbackReasonLabel(defaultPreferredTarget, defaultTarget)
+      : buildFallbackReasonLabel(defaultPreferredTarget, defaultTarget);
 
   return finalizeDecision(
     defaultTarget,
-    'default_auto',
+    "default_auto",
     reasonLabel,
     localAvailable,
     cloudAvailable,
-    'auto',
-  )
+    "auto",
+  );
 }
