@@ -1,0 +1,47 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Spatial multi-omics has helped address the limitations of single-cell sequencing, which often leads to the loss of spatial context among cell populations. Integrated analysis of the genome, transcriptome, proteome, metabolome, and epigenome has enhanced our understanding of cell biology and molecular diseases. This review examines current advancements in multi-omics technologies, focusing on their evolution over the past decade, including improvements in throughput, resolution, modality integration, and accuracy. It discusses the pivotal contributions of spatial multi-omics in revealing spatial heterogeneity, constructing detailed spatial atlases, deciphering spatial crosstalk in tumor immunology, and advancing translational research and cancer therapy through precise spatial mapping."
+    },
+    {
+        "block_id": 2,
+        "section": "Introduction & Spatial Transcriptomics",
+        "text": "Single-cell sequencing provides detailed insights into gene expression but often fails to retain critical spatial information about cell populations. Spatial multi-omics emerges as a transformative technology, enabling the precise localization of cells within tissues and the quantitative measurement of gene expression in situ. Spatial transcriptomics, recognized as the 'Technology of the Year 2020' by Nature Methods, enhances our understanding of cellular organization and intra-tissue interactions. Mainstream strategies include image-based in situ transcriptomics (e.g., smFISH, MERFISH, seqFISH) and oligonucleotide-based spatial barcoding followed by next-generation sequencing (NGS)."
+    },
+    {
+        "block_id": 3,
+        "section": "Technologies - Image & Sequencing Based",
+        "text": "Image-based methods like smFISH use fluorescence in situ hybridization for precise mRNA quantification but suffer from low probe specificity and high background. MERFISH reduces optical crowding via multiplexed error-robust hybridization, while seqFISH uses sequential rounds of imaging. Sequencing-based methods like FISSEQ and STARmap use padlock probes and rolling circle amplification (RCA) for unbiased whole transcriptome coverage but face challenges with low capture efficiency. NGS platforms like Illumina/Solexa offer high accuracy and throughput but are limited by short read lengths."
+    },
+    {
+        "block_id": 4,
+        "section": "Technologies - Spatial Genomics & Proteomics",
+        "text": "Spatial genomics examines DNA sequence and chromatin structure within tissue context. Techniques like In Situ Genome Sequencing (IGS) and Slide-DNA-seq allow for spatial mapping of paired-end sequences and fragmented genomic DNA, respectively. Spatial proteomics investigates protein spatial distribution via mass spectrometry (MS)-based methods or imaging-based methods. MS offers high sensitivity but low resolution, while imaging provides high sensitivity but low throughput. Deep Visual Proteomics (DVP) combines AI-driven image analysis with laser microdissection for single-cell proteomics."
+    },
+    {
+        "block_id": 5,
+        "section": "Technologies - Spatial Epigenomics & Metabolomics",
+        "text": "Spatial epigenomics explores modifications like histone acetylation using techniques such as CUT&Tag, which inserts adaptors during chromatin cutting via Tn5 transposase, offering high signal-to-noise ratios. Spatial metabolomics involves qualitative and quantitative analysis of low-molecular-weight metabolites. Targeted approaches use Fourier Transform Mass Spectrometry (FT-MS) or NMR for high precision, while untargeted approaches use LC/MS for global analysis but face challenges with metabolite identification due to isomers and adducts."
+    },
+    {
+        "block_id": 6,
+        "section": "Integration of Spatial Multi-Omics",
+        "text": "Integration aims to achieve spatially resolved whole-exome or whole-genome sequencing. Key integrations include: Spatial Transcriptomics and (Epi)Genomics (e.g., Spatial ATAC-RNA-seq, Spatial CUT&Tag-RNA-seq) which co-map epigenome and transcriptome; Spatial Proteomics and Transcriptomics (e.g., SM-Omics, Spatial-CITE-seq) which profile epitopes and transcriptomes; Spatial Transcriptomics and Metabolomics (e.g., SMA protocol) combining transcriptomics with MSI; and integration of Spatial Transcriptomics, Genomics, and Proteomics via Multi-omics in situ pairwise sequencing (MiP-seq) for subcellular resolution."
+    },
+    {
+        "block_id": 7,
+        "section": "Applications - Atlases & Heterogeneity",
+        "text": "Spatial multi-omics facilitates the construction of spatial-specific atlases, such as the human maternal-fetal interface and cardiac remodeling maps. It deciphers spatial-based heterogeneity in human diseases like metastatic prostate cancer (identifying heterogeneity in AR and neuroendocrine activity), non-small cell lung cancer (quantifying intratumor spatial heterogeneity), and glioblastoma (identifying prognostic markers like PPP1R12A and RPS14). It also reveals metabolic vulnerabilities, such as glutamine overutilization in gastric cancer."
+    },
+    {
+        "block_id": 8,
+        "section": "Applications - Crosstalk, Lineage & Therapy",
+        "text": "Spatial multi-omics elucidates crosstalk within the tumor microenvironment (TME), identifying distinct interfaces like peritumoral lymphoid tissue (PLT) with unique metabolic profiles. It aids spatial trajectory and lineage tracking, visualizing cell state changes and differentiation trajectories. In therapy, it identifies potential targets like B7-H3/CD276 in prostate cancer and TMAO in triple-negative breast cancer, and helps understand ferroptosis roles in multiple sclerosis, linking it to neuroinflammation and neurodegeneration."
+    },
+    {
+        "block_id": 9,
+        "section": "Perspectives & Conclusion",
+        "text": "The field aims for higher resolution, deeper coverage, and enhanced versatility for analyzing diverse samples (FFPE, fresh-frozen). Challenges remain in data acquisition, manipulation, analysis, and visualization of complex datasets. Developing independent benchmarks for integration algorithms is crucial. Ultimately, multi-omics techniques with spatial single-cell resolution are anticipated to revolutionize our understanding of cell biology, offering profound insights into disease mechanisms and personalized precision medicine."
+    }
+]

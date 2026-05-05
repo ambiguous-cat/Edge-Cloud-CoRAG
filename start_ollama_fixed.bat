@@ -18,5 +18,5 @@ echo.
 
 echo 启动Ollama服务...
 ollama serve
-
+ollama pull bge-m3:latest
 pause

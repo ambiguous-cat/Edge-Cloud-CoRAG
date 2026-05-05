@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Generator, Optional
 load_dotenv()  # 加载.env文件
 
 # 读取配置
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip('/')  # 去除末尾斜杠
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip('/')  # 去除末尾斜杠
 DEFAULT_CHAT_MODEL = os.getenv("RAG_DEFAULT_MODEL", "qwen3:1.7b").strip() or "qwen3:1.7b"
 CHAT_MODELS_ENV = os.getenv("RAG_CHAT_MODELS", DEFAULT_CHAT_MODEL)
 
@@ -55,7 +55,7 @@ def qwen_chat(messages: List[Dict[str, str]], model: str, **kwargs) -> str:
         "stream": False,
         "options": {
             "temperature": kwargs.get('temperature', 0.1),  # 降低到0.1以提高速度
-            "num_predict": kwargs.get('max_tokens', 1000),
+            "num_predict": kwargs.get('max_tokens', 10000),
         }
     }
 
@@ -95,7 +95,7 @@ def qwen_stream_chat(messages: List[Dict[str, str]], model: str, **kwargs) -> Ge
         "stream": True,
         "options": {
             "temperature": kwargs.get('temperature', 0.1),  # 降低到0.1以提高速度
-            "num_predict": kwargs.get('max_tokens', 1000),
+            "num_predict": kwargs.get('max_tokens', 10000),
         }
     }
 

@@ -1,0 +1,32 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Cancer-associated fibroblasts(CAFs) are a heterogeneous cell population that plays a crucial role in remodeling the tumor microenvironment(TME). Here, through the integrated analysis of spatial and single-cell transcriptomics data across six common cancer types, we identified four distinct functional subgroups of CAFs and described their spatial distribution characteristics. Additionally, the analysis of single-cell RNA sequencing(scRNA-seq) data from three additional common cancer types and two newly generated scRNA-seq datasets of rare cancer types, namely epithelial-myoepithelial carcinoma(EMC) and mucoepidermoid carcinoma(MEC), expanded our understanding of CAF heterogeneity. Cell-cell interaction analysis conducted within the spatial context highlighted the pivotal roles of matrix CAFs(mCAFs) in tumor angiogenesis and inflammatory CAFs(iCAFs) in shaping the immunosuppressive microenvironment. In patients with breast cancer(BRCA) undergoing anti-PD-1 immunotherapy, iCAFs demonstrated heightened capacity in facilitating cancer cell proliferation, promoting epithelial-mesenchymal transition(EMT), and contributing to the establishment of an immunosuppressive microenvironment. Furthermore, a scoring system based on iCAFs showed a significant correlation with immune therapy response in melanoma patients. Lastly, we provided a web interface(https://chenxisd.shinyapps.io/pancaf/) for the research community to investigate CAFs in the context of pan-cancer."
+    },
+    {
+        "block_id": 2,
+        "section": "Introduction & Results - Pan-cancer Atlas Construction",
+        "text": "Tumors display extensive heterogeneity, with cancer cells engaging in reciprocal interactions with their microenvironment. CAFs, as one of the most prominent cell populations in the TME, have garnered significant attention. However, the intricate interactions between CAFs and stromal/immune components remain insufficiently understood. We established a spatial single-cell transcriptome atlas by acquiring scRNA-seq data from 69 samples across six prevalent cancer types (BRCA, CRC, LIHC, OVCA, PRAD, UCEC) and spatial transcriptomics (ST) data from 22 tissue slices. After quality control, 163,919 cells and 59,529 spots were retained. Using CellTrek, we mapped single cells back to spatial coordinates, generating a pan-cancer spatial atlas containing 744,289 cells. This approach allowed us to overcome the loss of spatial information in scRNA-seq and study CAF crosstalk with the TME."
+    },
+    {
+        "block_id": 3,
+        "section": "Results - CAF Heterogeneity",
+        "text": "Reclustering of fibroblasts identified four CAF subtypes: inflammatory CAFs (iCAFs), matrix CAFs (mCAFs), metabolic CAFs (meCAFs), and proliferative CAFs (pCAFs), alongside pericytes and smooth muscle cells. iCAFs showed high expression of chemokines (CCL11, CXCL12) and were associated with immune responses. mCAFs expressed ECM remodeling genes (MMP11, CTHRC1, COL11A1) and were linked to angiogenesis. meCAFs were related to hypoxia response and glycolysis, while pCAFs expressed cell cycle genes (CENPF, TOP2A). Analysis of additional datasets from NSCLC, melanoma, HNSCC, EMC, and MEC confirmed the presence of iCAFs and mCAFs across diverse cancer types. SCENIC analysis revealed distinct regulons: CDX2 in iCAFs, TCF12 in mCAFs, KLF16 in meCAFs, and cell-cycle-related regulons (MYBL2, E2F2) in pCAFs. SCPA and scMetabolism analysis showed meCAFs enriched in glycolysis and pyruvate metabolism, while mCAFs were active in fatty acid biosynthesis."
+    },
+    {
+        "block_id": 4,
+        "section": "Results - Spatial Distribution & Trajectory",
+        "text": "Spatial analysis revealed an exclusionary phenomenon between high-density areas of iCAFs and mCAFs. Spatial trajectory analysis indicated a gradual change in cell proportions and biological processes (collagen synthesis, angiogenesis) from iCAF-rich to mCAF-rich regions. Using Robust Rank Aggregation (RRA), we found that all CAF subtypes were spatially proximate to each other, with endothelial cells and pericytes enriched near CAFs. Slingshot analysis suggested a potential transition pathway from pericytes to iCAFs, with genes related to wound healing, ECM, and inflammation activated along this trajectory."
+    },
+    {
+        "block_id": 5,
+        "section": "Results - Cell-Cell Interaction & Immunotherapy",
+        "text": "Using SpaTalk and CellChat, we inferred ligand-receptor interactions (LRIs). mCAFs secreted VEGF-family ligands (VEGFA, VEGFB) binding to receptors (FLT1, KDR, NRP1) on endothelial cells, promoting angiogenesis. iCAFs interacted with macrophages via TGFB1/2/3 and CSF1, potentially driving M2 macrophage polarization. iCAFs also interacted with CD8+ T cells via LGALS1 (Galectin-1) binding to PTPRC (CD45), and through MIF-CXCR4 interactions, potentially inducing T cell exhaustion. Analysis of BRCA patients treated with anti-PD-1 showed that while iCAF proportions didn't change, their transcriptional profiles shifted, upregulating CHI3L1 (promoting M2 polarization) and genes related to TNFa signaling, EMT, and complement activation. The iCAF score, constructed from marker genes, correlated significantly with survival and response to immunotherapy in melanoma patients."
+    },
+    {
+        "block_id": 6,
+        "section": "Methods - Analysis Workflow",
+        "text": "Sample processing used the Human Tumor Dissociation Kit. scRNA-seq libraries were prepared using Chromium Single Cell 3' Reagent v3 kits and sequenced on Illumina NovaSeq 6000. Data were processed by CellRanger and Seurat. Quality control filtered cells with >40,000 UMIs, <500 genes, >5,000 genes, or >20% mitochondrial genes. Doublets were removed using DoubletFinder. Harmony was used for batch correction. Malignant cells were identified using CopyKAT. CellTrek was used to map scRNA-seq data to ST coordinates. Differential expression used Seurat's FindAllMarkers (|log2FC|>1, adj.p.val<0.05). SCENIC analysis used pySCENIC. Trajectory analysis used Slingshot. Cell-cell communication was inferred using SpaTalk and CellChat. Survival analysis used Kaplan-Meier curves and log-rank tests. The iCAF score was calculated using ssGSEA."
+    }
+]

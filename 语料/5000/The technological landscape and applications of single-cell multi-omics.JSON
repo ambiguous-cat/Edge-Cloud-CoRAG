@@ -1,0 +1,42 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract & Introduction",
+        "text": "Single-cell multi-omics technologies characterize cell states by integrating transcriptome, genome, epigenome, proteome, and metabolome. This Review discusses established and cutting-edge methods, focusing on optimization of throughput, resolution, modality integration, and accuracy. Key applications include cell lineage tracing, tissue-specific atlas production, tumour immunology, and spatial mapping. Computational tools for integrating multi-omics data are also discussed. Single-cell sequencing was designated 'Method of the Year' in 2013. Methodological advances now allow simultaneous profiling of genome, epigenome, and transcriptome using platforms like laser capture microdissection (LCM) and microfluidics, enabling genome-scale characterization at unprecedented resolution. Gaining a clearer understanding of a cell's origin, state, and fate is a pressing need in biological research, driving the conception of 'spatial multi-omics'."
+    },
+    {
+        "block_id": 2,
+        "section": "Landscape - Transcriptome & Genome",
+        "text": "Single-cell transcriptomics is often paired with genomics to study gene expression heterogeneity. Early methods like G&T-seq and DR-seq separated genomic DNA from mRNA in single cells. In 2019, TARGET-seq demonstrated increased throughput (~5,000 cells/run) via barcoding. Physical separation of DNA and RNA remains a challenge due to potential loss of material. The landscape evolved from plate-based methods (e.g., Smart-seq) to droplet-based microfluidics (e.g., 10x Genomics), which offer high throughput but often profile only the 3' or 5' end of transcripts, unlike plate-based methods that yield full-length transcripts."
+    },
+    {
+        "block_id": 3,
+        "section": "Landscape - Epigenome & Throughput",
+        "text": "Integrating epigenome and transcriptome reveals DNA methylation, accessibility, and histone modifications. Technologies include scM&T-seq (methylome + transcriptome) and scTriO-seq (triple omics). Chromatin accessibility is profiled using adaptations of ATAC-seq, such as scATAC-seq and combinatorial indexing methods like sci-CAR-seq, which profiles chromatin accessibility and mRNA in over 11,200 nuclei. To boost throughput, methods like SPLiT-seq and Paired-seq use combinatorial barcoding to profile hundreds of thousands of nuclei. Recent methods like TEA-seq offer trimodal measurement of transcripts, epitopes, and chromatin accessibility."
+    },
+    {
+        "block_id": 4,
+        "section": "Landscape - Proteome & Other Modalities",
+        "text": "Integrating transcriptome and proteome is crucial for understanding cellular functions. CITE-seq combines highly multiplexed protein detection with unbiased transcriptome profiling via oligonucleotide-conjugated antibodies. REAP-seq and SCITO-seq further advanced this field. For CRISPR screens, Perturb-seq and CROP-seq link CRISPR-mediated perturbations to transcriptomic phenotypes. Additionally, characterizing T-cell receptors (TCRs) and B-cell receptors (BCRs) is vital for immunology. Technologies now pair gene expression with TCR/BCR sequences, often using 5'-end RNA amplification to resolve complex isoforms while maintaining whole-transcriptome data."
+    },
+    {
+        "block_id": 5,
+        "section": "Multi-omics Goes Spatial",
+        "text": "Spatial multi-omics aims to map interactions within intact tissues. Imaging-based technologies like MERFISH and seqFISH+ allow multiplexed RNA imaging, while methods like CODEX use cyclic immunofluorescence for proteins. Sequencing-based technologies evolved from in situ sequencing (e.g., FISSEQ) to ex situ methods. Spatial transcriptomics (e.g., 10x Visium, Slide-seq) uses barcoded arrays to capture mRNA from tissue sections. Deterministic barcoding in tissue (DBiT-seq) offers a different approach by flowing DNA barcodes through microfluidic channels to create a spatial grid, enabling co-mapping of proteins and transcriptome. Laser Capture Microdissection (LCM) remains a key method for isolating specific tissue regions for multi-omics analysis."
+    },
+    {
+        "block_id": 6,
+        "section": "Applications - Lineage & Atlases",
+        "text": "Single-cell multi-omics is instrumental in tracing cell lineages by combining genomic variations, methylome, and transcriptome to build phylogenetic trees. It aids in understanding differentiation trajectories and disease evolution, such as in glioblastoma or chronic lymphocytic leukemia. Major initiatives like the Human Cell Atlas (HCA) and the Encyclopedia of DNA Elements (ENCODE) utilize multi-omics data to create comprehensive reference atlases, integrating data from genomics, epigenomics, transcriptomics, and spatial omics to define cell types across human tissues."
+    },
+    {
+        "block_id": 7,
+        "section": "Applications - Tumour Immunology & Cancer",
+        "text": "In cancer research, multi-omics reveals tumour heterogeneity and the tumour microenvironment (TME). Slide-DNA-seq preserves tumour architecture to identify distinct clones and copy number variations. Integrative analysis of transcriptomics, metabolomics, and proteomics helps elucidate metabolic vulnerabilities (e.g., CPT1A in prostate cancer) and signalling pathways (e.g., SMAD4 in colorectal cancer). In immuno-oncology, these methods assess immune-checkpoint blockade (ICB) responses by linking TCR clonality with spatial phenotypes, as seen in studies of CXCL13+ CD8+ T cells and triple-negative breast cancer."
+    },
+    {
+        "block_id": 8,
+        "section": "Computational Tools & Future Perspectives",
+        "text": "A major challenge is integrating multi-omics data, classified as 'matched' (same cell) or 'unmatched' (different cells). Tools like Seurat v3/v4/v5, LIGER, and GLUE use canonical correlation analysis, non-negative matrix factorization, or graph variational autoencoders to find a shared biological space. Methods like MOFA+, SCENIC+, and MultiVelo model joint variation across modalities (e.g., transcriptome and chromatin accessibility) to infer gene regulatory networks and predict cellular states. Future directions include improving long-read sequencing for better variant detection, advancing spatial omics to capture 3D tissue architecture, and applying pseudotime analysis across multi-omics layers to unify developmental trajectories."
+    }
+]

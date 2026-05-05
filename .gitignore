@@ -27,3 +27,13 @@ react-frontend/dist/
 .DS_Store
 Thumbs.db
 
+# PROJECT
+feature_list.json
+CLAUDE.md
+前端/
+init.sh
+PROJECT.md
+session.txt
+docs.md
+端云协同RAG智能助理系统项目报告.md
+logs/

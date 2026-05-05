@@ -1,0 +1,32 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Advances in spatial omics technologies now allow multiple types of data to be acquired from the same tissue slice. To realize the full potential of such data, we need spatially informed methods for data integration. Here, we introduce SpatialGlue, a graph neural network model with a dual-attention mechanism that deciphers spatial domains by intra-omics integration of spatial location and omics measurement followed by cross-omics integration. We demonstrated SpatialGlue on data acquired from different tissue types using different technologies, including spatial epigenome-transcriptome and transcriptome-proteome modalities. Compared to other methods, SpatialGlue captured more anatomical details and more accurately resolved spatial domains such as the cortex layers of the brain. Our method also identified cell types like spleen macrophage subsets located at three different zones that were not available in the original data annotations. SpatialGlue scales well with data size and can be used to integrate three modalities."
+    },
+    {
+        "block_id": 2,
+        "section": "Introduction & Model Overview",
+        "text": "Spatial transcriptomics is the next major development in analyzing biological samples since the advent of single-cell RNA-seq. Recently, spatial technologies are expanding to the simultaneous profiling of different omics on a single tissue section. These technologies can be roughly divided into sequencing-based (e.g., DBiT-seq, spatial-CITE-seq, spatial ATAC-RNA-seq) and imaging-based (e.g., DNA seqFISH+, MERSCOPE). To fully utilize spatial multi-omics data, we need methods that can handle feature counts varying enormously across modalities and possess different statistical distributions. Existing methods either are unimodal or do not use spatial information. Here we present SpatialGlue for spatial multi-omics analysis. SpatialGlue is a graph neural network (GNN)-based deep learning model that integrates multiple spatial omics data modalities acquired from the same tissue slice. It uses a dual-attention mechanism at two levels: within-modality spatial information and measurement feature integration first, and then between-modality multi-omics integration."
+    },
+    {
+        "block_id": 3,
+        "section": "Results - Model Structure & Benchmarking",
+        "text": "SpatialGlue learns a low-dimensional embedding within each modality using spatial coordinates and omics data. It constructs a spatial proximity graph and a feature similarity graph, using a within-modality attention aggregation layer to adaptively integrate graph-specific representations. Similarly, a between-modality attention aggregation layer learns modality-specific importance weights. We first benchmarked SpatialGlue using simulated data and experimentally acquired data of the human lymph node with ground truth. For simulated data with two modalities (simulating transcriptome and proteome), SpatialGlue achieved better quantitative performance than competing methods (Seurat, totalVI, MultiVI, MOFA+, MEFISTO, scMM, StabMap), capturing all four spatial factors to closely match the ground truth. Quantitative metrics (homogeneity, mutual information, AMI, NMI, ARI) confirmed SpatialGlue scoring top in all metrics."
+    },
+    {
+        "block_id": 4,
+        "section": "Results - Biological Applications",
+        "text": "We applied SpatialGlue to mouse brain epigenome-transcriptome datasets (spatial ATAC-RNA-seq and CUT&Tag-RNA-seq). SpatialGlue leveraged the data to differentiate more cortex layers than the original data annotation. For instance, in a P22 mouse brain coronal section, SpatialGlue captured major structures (ctx layers, caudoputamen, lateral ventricle) and produced better defined layers. We also tested SpatialGlue on mouse thymus data acquired with Stereo-CITE-seq (RNA and protein). SpatialGlue accurately integrated the data to identify structures like the corticomedullary junction and inner, middle, and outer cortex. Finally, we applied SpatialGlue to mouse spleen data from SPOTS (RNA and protein), where it identified macrophage subsets (RpM, MZM, MMM) located at different zones, which were not annotated in the original study."
+    },
+    {
+        "block_id": 5,
+        "section": "Methods - Framework & Math",
+        "text": "SpatialGlue takes feature matrices $X^1 \\in R^{N \\times d_1}$ and $X^2 \\in R^{N \\times d_2}$ as input. It constructs a spatial neighbor graph $G_s$ and a feature graph $G_f^m$ for each modality $m$. A Graph Convolutional Network (GCN) encoder learns latent representations $H_s^m$ and $H_f^m$. The within-modality attention coefficient $e_i^t$ is calculated as $e_i^t = q^T \\cdot \\tanh(W_i^{intra} h_i^t + b_i^{intra})$, and normalized via softmax to get attention score $\\alpha_i^t$. The modality-specific representation $y_i^m$ is derived by aggregating graph-specific representations: $y_i^m = \\sum_{t=1}^T \\alpha_i^t \\cdot h_i^t$. The between-modality attention coefficient $g_i^m$ is $g_i^m = v^T \\cdot \\tanh(W_i^{inter} y_i^m + b_i^{inter})$, normalized to $\\beta_i^m$. The final integrated latent representation $z_i$ is $z_i = \\sum_{m=1}^M \\beta_i^m \\cdot y_i^m$."
+    },
+    {
+        "block_id": 6,
+        "section": "Methods - Loss Functions & Implementation",
+        "text": "The model is trained with reconstruction loss and correspondence loss. Reconstruction loss $\\mathcal{L}_{recon}$ minimizes the difference between original features $x_i$ and reconstructed features $\\hat{h}_i$: $\\mathcal{L}_{recon} = \\gamma_1 \\sum_{i=1}^N \\| x_i^1 - \\hat{h}_i^1 \\|_F^2 + \\gamma_2 \\sum_{i=1}^N \\| x_i^2 - \\hat{h}_i^2 \\|_F^2$. Correspondence loss $\\mathcal{L}_{corr}$ forces consistency between modality-specific representations: $\\mathcal{L}_{corr} = \\gamma_3 \\sum_{i=1}^N \\| y_i^1 - \\hat{y}_i^1 \\|_F^2 + \\gamma_4 \\sum_{i=1}^N \\| y_i^2 - \\hat{y}_i^2 \\|_F^2$. The total loss is $\\mathcal{L}_{total} = \\mathcal{L}_{recon} + \\mathcal{L}_{corr}$. Implementation details: Learning rate 0.0001. Weight factors $[\gamma_1, \\gamma_2, \\gamma_3, \\gamma_4]$ were tailored for each dataset (e.g., [1,5] for SPOTS mouse spleen, [1,10] for Stereo-CITE-seq mouse thymus). Training epochs varied by dataset (e.g., 1600 for spatial epigenome-transcriptome mouse brain)."
+    }
+]

@@ -1,0 +1,32 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Single-cell RNA-seq (scRNA-seq) data simulation is critical for evaluating computational methods, yet current technological advances and challenges from a data science perspective remain underexplored. This review discusses four major data science challenges in single-cell and spatial transcriptomics: data sparsity (curse of dimensionality, noise, uncertainty), data diversity (multimodal/multi-source integration), data scarcity (missing annotations/modalities), and data correlation (spatiotemporal dependencies, prior knowledge). Deep learning (DL) methods, including autoencoders (AE), variational autoencoders (VAE), generative adversarial networks (GAN), and graph neural networks (GNN), demonstrate superior performance over traditional statistical methods in addressing these challenges. The study curates 21 datasets from nine benchmarks to evaluate 58 computational methods, revealing that model performance varies significantly across datasets and metrics. Future directions emphasize novel AI methodologies, fair benchmark datasets with biologically interpretable metrics, and practical DL applications in biological and clinical scenarios."
+    },
+    {
+        "block_id": 2,
+        "section": "Introduction & Sequencing Pipelines",
+        "text": "Single-cell RNA sequencing (scRNA-seq) quantifies gene expression at the cellular level, elucidating cellular composition and heterogeneity, but tissue dissociation disrupts spatial context. Spatial transcriptomics (ST) generates spatially resolved transcriptomic data, transitioning from cellular to subcellular resolution. However, analyzing these high-dimensional, sparse, and multi-modal data presents significant challenges. The scRNA-seq pipeline involves: (1) Isolation of single cells via FACS, MACS, or microfluidic techniques (e.g., Drop-seq, 10x Chromium); (2) Reverse transcription using poly(A) tailing to generate cDNA with cell-specific barcodes and UMIs; (3) cDNA amplification via PCR or in vitro transcription; and (4) Sequencing library construction. ST techniques are categorized into next-generation sequencing-based methods (e.g., 10x Visium, Slide-seq using spatial barcodes) and imaging-based methods (e.g., MERFISH, seqFISH using targeted probes)."
+    },
+    {
+        "block_id": 3,
+        "section": "Challenges: Data Sparsity & Imputation",
+        "text": "Data sparsity in scRNA-seq manifests as the 'curse of dimensionality,' where high gene dimensionality leads to sparse data and diminished similarity between points. Noise includes biological randomness and technical batch effects, while uncertainty arises from measurement errors. To address this, methods like scvis (a VAE-based nonlinear dimensionality reduction method) model the posterior distribution $p(z_n \\mid \\theta)$ as a standard normal distribution $\\mathcal{N}(z; 0, I)$. For imputation, DCA (Deep Count Autoencoder) employs a zero-inflated negative binomial (ZINB) noise model to infer parameters (mean, dispersion, dropout probabilities) from the data. scIGAN utilizes GANs to generate synthetic single-cell profiles, minimizing overfitting. Benchmarking 12 imputation methods (e.g., scImpute, SAVER, MAGIC) across five datasets showed DCA and scIGAN achieved the highest imputation consistency, highlighting the robustness of VAE-based approaches in denoising and reconstructing gene expression."
+    },
+    {
+        "block_id": 4,
+        "section": "Challenges: Data Diversity & Integration",
+        "text": "Data diversity encompasses intra-sample (sequencing depth), inter-sample (protocol variations), and inter-species heterogeneity. Integrating multi-omics data (e.g., mRNA-methylation, mRNA-ATAC) and aligning unpaired datasets is challenging due to scale discrepancies and resolution mismatches. Methods like LIGER and iNMF use Non-negative Matrix Factorization to decompose multi-omics data into shared 'latent metagenes.' Seurat v3 and GLUE integrate scRNA-seq with scATAC-seq or ST data using anchor-based mutual nearest neighbors (MNN) or graph-based coupling. For spatial alignment, STAligner uses triplet-based MNN to identify similar gene expression patterns for 3D tissue reconstruction. soScope, a generative framework, integrates transcriptomic, histone, DNA, and protein data with high-resolution images using a variational Bayesian inference network to infer precise spatial maps, addressing the trade-off between resolution and throughput."
+    },
+    {
+        "block_id": 5,
+        "section": "Challenges: Data Scarcity & Correlation",
+        "text": "Data scarcity is evident in the lack of large-scale, high-quality annotated datasets and missing modalities. Simulation tools like scDesign3 generate single-cell multi-omics and ST data with known cell proportions using a Generalized Additive Model for Location, Scale, and Shape (GAMLSS). It models measurement values $Y_{ij}$ based on cell state covariates $x_i$ and experimental design $z_i$. For modeling spatiotemporal dependencies, Gaussian Processes (GPs) like MEFISTO model latent factors with temporal/spatial information, though with cubic $O(N^3)$ complexity. Graph models, such as Markov Random Fields (MRF) used in Giotto, assume neighboring cells share similar labels. DeepLinc utilizes GNNs to learn embedding features from cell adjacency graphs, uncovering cell-cell interaction networks. Incorporating prior knowledge from databases (KEGG, Reactome) into models like GLUE helps infer gene regulatory networks."
+    },
+    {
+        "block_id": 6,
+        "section": "Databases & Future Perspectives",
+        "text": "The review curates 12 single-cell databases (e.g., HCA, CELLxGENE, SCP) and 7 ST databases (e.g., SpatialDB, STOmicsDB, SORC). These resources provide comprehensive atlases for human cells, diseases, and spatial transcriptomics. Future perspectives emphasize developing foundational AI models (e.g., scGPT, SCimilarity) using self-supervised pretraining on large unlabeled datasets, enabling zero-shot cell annotation and batch correction. There is a need for benchmarks with biologically relevant evaluation metrics beyond accuracy (AUC, RMSE) and systematic validation via in vitro experiments. Applications in precision medicine, disease heterogeneity, and biomarker discovery will drive the integration of multi-omics data for personalized therapeutic strategies."
+    }
+]

@@ -13,7 +13,7 @@ DEFAULT_EMBEDDING_TYPE = os.getenv("EMBEDDING_TYPE", "bge").strip().lower() or "
 # DEFAULT_EMBEDDING_MODEL = (
 #     os.getenv("EMBEDDING_MODEL", "bge-large:latest").strip() or "bge-large:latest"
 # )
-DEFAULT_EMBEDDING_MODEL="bge-large:latest"
+DEFAULT_EMBEDDING_MODEL="bge-m3:latest"
 # 支持的嵌入类型：
 # text -> OpenAI 兼容嵌入接口
 # bge/qwen -> Ollama /api/embeddings

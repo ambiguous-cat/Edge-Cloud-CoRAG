@@ -1,0 +1,38 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Technological advances have enabled us to profile multiple omics layers with spatial information, significantly enhancing spatial domain detection and advancing a variety of biomedical research fields. Despite these advancements, there is a notable lack of effective methods for modeling spatial multi-omics data. We introduce SMOPCA, a Spatial Multi-Omics Principal Component Analysis method designed to perform joint dimension reduction on multimodal data while preserving spatial dependencies. Extensive experiments reveal that SMOPCA outperforms existing single-modal and multimodal dimension reduction and clustering methods, across both single-cell and spatial multi-omics datasets derived from diverse technologies and tissue structures."
+    },
+    {
+        "block_id": 2,
+        "section": "Background & Introduction",
+        "text": "Cellular phenotype and functional states are intrinsically regulated at multiple 'omics' layers. Recent advances in spatial multi-omics technologies further allow us to profile different aspects of a cell while retaining spatial information. However, current computational methods for single-cell multi-omics are not optimal for spatial data as they assume independence among cells. Existing methods for spatially resolved transcriptomics (SRT) like SpatialPCA cannot be directly applied to spatial multi-omics data. Methods like SpaVAE and SpatialGlue are limited to at most two modalities and require network redesign for more. To fill this gap, we introduce SMOPCA, a novel spatial multi-omics principal component analysis method that optimizes computational pipelines for dimension reduction and spatial domain detection."
+    },
+    {
+        "block_id": 3,
+        "section": "Results - SMOPCA Overview",
+        "text": "SMOPCA takes multiple modalities $Y=\\{Y_1, ..., Y_K\\}$ and location information $S=\\{s_1, ... s_n\\}$ as inputs, learning joint latent factors $Z$ through factor analysis models. To integrate spatial location information, we assume each latent factor $Z_l$ adheres to a multivariate normal (MVN) prior distribution $Z_l \\sim \\text{MVN}(0, \\Sigma_l)$ to capture spatial dependencies, where $\\Sigma_l$ is a covariance matrix calculated based on location $S$. The ij-th element of $\\Sigma_l$ is defined by a kernel function, defaulting to the Matern kernel with $v=3/2$: $k_{v=3/2,\\gamma}(s_i, s_j) = (1 + \\frac{\\sqrt{3}\\|s_i - s_j\\|}{\\gamma}) \\exp(-\\frac{\\sqrt{3}\\|s_i - s_j\\|}{\\gamma})$. Inference is performed via Maximum Likelihood Estimation (MLE). The marginal likelihood for modality $k$ is derived, and parameters $W_k$ and $\\sigma_k^2$ are estimated iteratively."
+    },
+    {
+        "block_id": 4,
+        "section": "Results - Simulation Studies",
+        "text": "To evaluate SMOPCA, we conducted simulation experiments using real single-cell multi-omics datasets (CITE-seq and SMAGE-seq) with simulated cell locations based on the LIBD human dorsolateral prefrontal cortex (DLPFC) datasets. We compared SMOPCA against methods like BREM-SC, CiteFuse, scMDC, Seurat, TotalVI, SpatialPCA, and PCA+K-means. Results show that SMOPCA outperforms competitors across metrics like Adjusted Mutual Information (AMI), Normalized Mutual Information (NMI), and Adjusted Rand Index (ARI). Latent vectors learned by SMOPCA exhibit improved capacity to distinguish between different cell types compared to SpatialPCA. We also demonstrated SMOPCA's capability to analyze data with more than two modalities (simulated 3-modality data), outperforming PCA+K-means, SpatialPCA, SpaVAE, and SpatialGlue_3M."
+    },
+    {
+        "block_id": 5,
+        "section": "Results - Application to Spatial Multi-Omics Data",
+        "text": "We applied SMOPCA to real spatial multi-omics datasets: 1) Spatial-CITE-seq data of human tonsil tissue. SMOPCA achieved the highest Moran's I score and lowest LISI score, accurately localizing clusters corresponding to crypt epithelia, specific T cell zones, and germinal centers. 2) Stereo-CITE-seq data of mouse thymus. SMOPCA identified medulla, cortex, and connective tissue capsule regions effectively. 3) Spatial ATAC-RNA-seq data from mouse embryonic (E15.5) brain. SMOPCA distinguished ventricular zone (VZ) from pallium stratum, validated by marker genes (SOX2 for VZ, TBR1 for pallium). It also provided smoother results compared to competing methods based on Moran's I and LISI scores."
+    },
+    {
+        "block_id": 6,
+        "section": "Results - Application to Single-Cell Multi-Omics Data",
+        "text": "SMOPCA is readily applicable to single-cell multi-omics data by using pseudo-spatial coordinates generated from UMAP. Experiments on real CITE-seq and SMAGE-seq datasets show that with UMAP coordinates, SMOPCA yields superior or comparable clustering results to state-of-the-art methods like scMDC. A special version of SMOPCA with a diagonal covariance matrix (implying no spatial dependency) still delivered good results, suggesting its flexibility. This demonstrates SMOPCA can model single-cell data even without explicit spatial coordinates by leveraging other dimension reduction techniques."
+    },
+    {
+        "block_id": 7,
+        "section": "Discussion & Conclusion",
+        "section": "Discussion & Conclusion",
+        "text": "SMOPCA serves as a powerful and flexible framework for dependency-aware dimension reduction in spatial multi-omics analysis. By explicitly incorporating spatial location information, SMOPCA preserves neighborhood similarity in the latent space and effectively captures spatial correlations across multiple omics layers. Extensive experiments demonstrate its superior performance in clustering and spatial domain detection. While current implementation has $O(n^3)$ time complexity, future work aims to optimize this. The method is robust to kernel choices and preprocessing. SMOPCA contributes significantly to advancing spatial multi-omics data analysis by providing a principled way to integrate multi-modal data while respecting spatial constraints."
+    }
+]

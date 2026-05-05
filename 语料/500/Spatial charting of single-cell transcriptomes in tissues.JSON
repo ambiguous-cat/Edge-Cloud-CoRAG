@@ -1,0 +1,42 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Single cell RNA sequencing(scRNA-seq) methods can profile the transcriptomes of single cells but cannot preserve spatial information. Conversely, spatial transcriptomics(ST) assays can profile spatial regions in tissue sections, but do not have single cell genomic resolution. Here, we developed a computational approach called CellTrek that combines these two datasets to achieve single cell spatial mapping. We benchmarked CellTrek using a simulation study and two in situ datasets. We then applied CellTrek to reconstruct cellular spatial structures in existing datasets from normal mouse brain and kidney tissues. We also performed scRNA-seq and ST experiments on two ductal carcinoma in situ(DCIS) tissues and applied CellTrek to identify tumor subclones that were restricted to different ducts, and specific T cell states adjacent to the tumor areas. Our data shows that CellTrek can accurately map single cells in diverse tissue types to resolve their spatial organization."
+    },
+    {
+        "block_id": 2,
+        "section": "Introduction",
+        "text": "Single cell RNA sequencing(scRNA-seq) methods have greatly expanded our understanding of the gene expression programs of diverse cell types and their role in development and disease. However, scRNA-seq inherently loose cellular spatial information during the tissue dissociation step, which is critical for understanding cellular microenvironment and cell-cell interactions. While spatial sequencing methods, including spatial transcriptomics(ST) and Slide-seq, can spatially profile gene expression across tissue sections, they are limited to measuring small regions with mixtures of cells and cannot easily provide single cell information. To address this issue, computational approaches(e.g., cell2location, RCTD) have been designed to deconvolute ST spots into proportions of different cell types. However, spatial deconvolution methods are limited to inferring only cell type proportions for each spot, and cannot achieve single cell resolution. Additionally, deconvolution methods have limited ability to further resolve cell types into more granular 'cell states'(expression programs) that reflect different biological functions."
+    },
+    {
+        "block_id": 3,
+        "section": "Results - Overview of CellTrek Toolkit",
+        "text": "CellTrek first integrates and co-embeds ST and scRNA-seq data into a shared feature space. Using the ST data, CellTrek trains a multivariate random forests(RF) model to predict the spatial coordinates using shared dimension reduction features. A spatial non-linear interpolation on ST data is introduced to augment the spatial resolution. The trained model is then applied to the co-embedded data to derive an RF-distance matrix which measures the expression similarities between ST spots and single cells supervised by spatial coordinates. Based on the RF-distance matrix, CellTrek produces a sparse spot-cell graph using mutual nearest neighbors(MNN) after thresholding. Finally, CellTrek transfers spatial coordinates for cells from their neighbor spots. The RF distance is calculated by: $$RF\\text{ distance}=\\frac{\\text{\\# edges to the immediate shared ancestor on the tree}}{\\text{\\# edges to the tree root}}$$."
+    },
+    {
+        "block_id": 4,
+        "section": "Results - Benchmarking and Simulations",
+        "text": "We benchmarked CellTrek using three spatial datasets: a simulated scRNA-seq dataset, a FISH-based Drosophila embryo dataset, and a seqFISH dataset of mouse embryo. We compared CellTrek to NVSP-CellTrek (which uses novoSpaRc) and Seurat coordinate transfer(SrtCT). Both CellTrek and NVSP-CellTrek reconstructed the original spatial pattern of the simulated data, while SrtCT only reconstructed a rough spatial relationship. Quantitatively, using KL-divergence, CellTrek and NVSP-CellTrek achieved low KL-divergences, while SrtCT showed much higher discrepancies. In the Drosophila embryo data, CellTrek accurately reconstructed the original spatial layout with the lowest KL-divergences among three approaches."
+    },
+    {
+        "block_id": 5,
+        "section": "Results - Mouse Brain and Kidney",
+        "text": "We applied CellTrek to public mouse brain scRNA-seq and ST datasets. CellTrek reconstructed a clear layer structure of laminar excitatory neuron subtypes in the order of L2/3 IT, L4, L5 IT, L6 IT, L6 CT, and L6b, which matched the cerebral cortex structure. We also applied CellTrek to a mouse kidney dataset. CellTrek accurately reconstructed cellular spatial structures with distinct cell types located in different histological zones (e.g., cortex, outer medulla, and inner medulla). Using SrtLT as a reference, both CellTrek and NVSP-CellTrek achieved overall low KL-divergence, suggesting successful recovery of spatial cellular structures."
+    },
+    {
+        "block_id": 6,
+        "section": "Results - DCIS Breast Cancer Analysis",
+        "text": "We applied 3' scRNA-seq and ST to a DCIS sample(DCIS1) to profile 6,828 single cells and 1,567 ST spots. CopyKAT inferred copy number profiles, identifying three major tumor subclones(clone1-3) with distinct alterations. Applying CellTrek, we found that different tumor subclones mapped to different ductal regions, reflecting extensive spatial intratumor heterogeneity. Clone2 was localized mostly to the middle(M) ducts, while clone3 was located primarily on the right(R) ducts. We also applied CellTrek to another DCIS sample with synchronous invasive components(DCIS2), mapping immune cells to areas surrounding ducts and stromal regions, indicating the presence of tertiary lymphoid structures(TLS)."
+    },
+    {
+        "block_id": 7,
+        "section": "Methods - CellTrek Toolkit Details",
+        "text": "CellTrek uses a reference-based co-embedding approach with scRNA-seq as reference and ST as query. It trains a multivariate RF model with the formula: $$[X, Y]\\sim PCs$$, where X and Y are spatial coordinates and PCs are principal components. A non-linear 2D interpolation augments ST spots. The trained RF model derives an RF-distance matrix. CellTrek constructs a sparse graph by filtering distances and matching closest cell-spot pairs using MNN. It assigns coordinates from ST spots to neighboring cells and applies a point repulsion algorithm to avoid cell clumping. For SColoc, it calculates a 2D grid kernel density for each cell type using kde2d and calculates KL-divergence between densities."
+    },
+    {
+        "block_id": 8,
+        "section": "Methods - SCoexp and Data Acquisition",
+        "text": "SCoexp calculates a spatial kernel weight matrix W using radial basis function(RBF): $$W\\text{ Cor}=\\frac{X^{T} W X}{\\sqrt{\\operatorname{diag}\\left(X^{T} W X\\right)\\operatorname{diag}\\left(X^{T} W X\\right)^{T}}}$$. It uses consensus clustering(CC) or WGCNA to identify gene modules. For mouse brain/kidney data, we downloaded datasets from Seurat website and GEO. For DCIS tissues, fresh samples were dissociated enzymatically, sequenced on Illumina Novoseq, and processed using Cell Ranger and Seurat. ST Visium experiments were performed following the Visium Spatial Gene Expression protocol."
+    }
+]

@@ -1,0 +1,37 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Although single-cell and spatial sequencing methods enable simultaneous measurement of multiple biological modalities, no technology can capture all modalities within the same cell. Existing integration methods rely on 'strong linkage' with highly correlated, a priori linked features. We describe MaxFuse, a cross-modal data integration method that uses iterative coembedding, graph-smoothing, and cell matching to achieve high-quality integration even when features are weakly linked. MaxFuse is modality-agnostic and demonstrates high robustness and accuracy in weak linkage scenarios, achieving 20-70% relative improvement over existing methods on benchmarking datasets. Applied to integrate spatial proteomic data with single-cell sequencing data, MaxFuse enabled spatial consolidation of proteomic, transcriptomic, and epigenomic information at single-cell resolution."
+    },
+    {
+        "block_id": 2,
+        "section": "Introduction & Results - Concept of Linkage",
+        "text": "A key factor limiting existing methods is the strength of linkage between modalities. A feature is 'linked' if measurable or predictable in both modalities. 'Strong linkage' occurs when many features are linked with high correlation, such as gene activity from scATAC-seq correlating with RNA expression. Most methods are designed for this scenario. In contrast, 'weak linkage' involves few linked features or weak correlations, a common challenge when integrating targeted protein assays (e.g., CODEX) with transcriptome or epigenome assays (e.g., scRNA-seq), which are becoming prevalent with spatial proteomic technologies."
+    },
+    {
+        "block_id": 3,
+        "section": "Results - Methodology Overview",
+        "text": "MaxFuse takes two pairs of matrices as input: cell-by-feature matrices with all measured features and cell-by-feature matrices with linked features. The pipeline has three stages. Stage 1 performs initial cross-modal matching via three steps: (1) Compute a fuzzy nearest-neighbor graph for each modality using all features; (2) Apply 'fuzzy smoothing' to boost the signal-to-noise ratio in linked features by shrinking values towards the graph-neighborhood average; (3) Compute distances between all cross-modal cell pairs for initial matching. Stage 2 improves matching quality by iterating joint embedding, fuzzy smoothing, and linear assignment. Stage 3 screens matches to retain high-quality 'pivots' and propagates these matches to unmatched cells."
+    },
+    {
+        "block_id": 4,
+        "section": "Results - Benchmarking on Transcriptome & Protein",
+        "text": "MaxFuse was benchmarked on a CITE-seq dataset of PBMCs with 228 protein markers and whole transcriptome. Compared to Seurat, Liger, Harmony, and BindSC, MaxFuse showed superior performance using six criteria: cell-type-level label transfer accuracy (Level 1: 93.9%, >7% better than the second best), silhouette F1 score, ARI F1 score, FOSCTTM, and FOSKNN. Even with reduced antibody panels (top 100, 50, 30 proteins), MaxFuse consistently outperformed others, mitigating the effect of reduced panel size (maintaining ~90% Level 1 accuracy) while other methods dropped to 15-75%."
+    },
+    {
+        "block_id": 5,
+        "section": "Results - Strong Linkage & Speed Comparison",
+        "text": "For strong linkage scenarios like scRNA-seq and scATAC-seq integration, MaxFuse achieved best or close-to-best performance compared to Maestro, scJoint, and scGLUE. Crucially, MaxFuse was computationally much faster. For a dataset of 20,000 cells, MaxFuse completed within 5 minutes on a MacBook Pro (M1 Max CPU), whereas scGLUE took hours on the same platform and ~30 minutes even with GPU acceleration (NVIDIA Quadro RTX8000)."
+    },
+    {
+        "block_id": 6,
+        "section": "Results - Spatial Pattern Discovery & Tri-modal Integration",
+        "text": "Applied to integrate CODEX spatial proteomics with scRNA-seq of human tonsils, MaxFuse was the only method able to integrate the modalities while preserving cell population structure. It reconstructed spatial gradients of germinal center (GC) genes (BCL6, AICDA, FOXP1) and memory B cell genes (CCR6, BANK1) relative to the GC boundary. Furthermore, MaxFuse enabled tri-modal atlas-level integration of CODEX, snRNA-seq, and snATAC-seq data from the human intestine. By chaining pairwise alignments (protein-RNA and RNA-ATAC), it created a joint profile of protein abundance, RNA expression, and chromatin accessibility at single-cell resolution."
+    },
+    {
+        "block_id": 7,
+        "section": "Methods - Mathematical Formulation",
+        "text": "Consider datasets $Y \\in R^{N_y \\times p_y}$ and $Z \\in R^{N_z \\times p_z}$. Linked features are defined by functions $f_y$ and $f_z$ producing $Y^{\\circ} = f_y(Y)$ and $Z^{\\circ} = f_z(Z)$. Meta-cells are constructed via clustering to alleviate sparsity. Fuzzy smoothing is defined as $\\mathcal{S}_Y(A; w) = w A + (1-w)\\mathcal{A}_Y(A)$, where $\\mathcal{A}_Y(A) = K_Y^{-1} G_Y A$ is a locally averaged version over the nearest-neighbor graph $G_Y$. Initial matching is found by solving a linear assignment problem: minimize $\\langle\\Pi, D^{\\circ}\\rangle$ subject to $\\sum_i \\Pi_{ij} \\leq 1$, $\\sum_j \\Pi_{ij} \\leq 1$, and $\\sum_{i,j} \\Pi_{ij} = n_{\\min}$. Iterative refinement uses CCA on matched pairs to get joint embedding coordinates $Y_m^{cc}, Z_m^{cc}$, which are then smoothed and used to update the distance matrix $D^{(t)}$ for the next assignment."
+    }
+]

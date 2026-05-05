@@ -1,0 +1,37 @@
+[
+    {
+        "block_id": 1,
+        "section": "Abstract",
+        "text": "Technological advances have enabled us to profile multiple omics layers with spatial information, significantly enhancing spatial domain detection and advancing a variety of biomedical research fields. Despite these advancements, there is a notable lack of effective methods for modeling spatial multi-omics data. We introduce SMOPCA, a Spatial Multi-Omics Principal Component Analysis method designed to perform joint dimension reduction on multimodal data while preserving spatial dependencies. Extensive experiments reveal that SMOPCA outperforms existing single-modal and multimodal dimension reduction and clustering methods, across both single-cell and spatial multi-omics datasets derived from diverse technologies and tissue structures."
+    },
+    {
+        "block_id": 2,
+        "section": "Background & Introduction",
+        "text": "Cellular phenotype and functional states are intrinsically regulated at multiple 'omics' layers, involving the genome, epigenome, transcriptome, proteome, and metabolome. Recent advances in multimodal sequencing technologies enable us to simultaneously profile different omics layers, providing a complete representation of cellular identity. However, tissue dissociation in single-cell methods results in the loss of spatial information, which is critical for understanding cell states and microenvironments. Spatial multi-omics technologies address this by profiling different aspects of a cell while retaining spatial information. Current computational methods for single-cell multi-omics are not optimal for spatial data as they assume independence among cells. Existing methods for spatially resolved transcriptomics (SRT) like SpatialPCA cannot be directly applied to spatial multi-omics data. Methods like SpaVAE and SpatialGlue are limited to at most two modalities and require network redesign for more. To fill this gap, we introduce SMOPCA, a novel spatial multi-omics principal component analysis method that optimizes computational pipelines for dimension reduction and spatial domain detection."
+    },
+    {
+        "block_id": 3,
+        "section": "Results - Overview & Simulation I",
+        "text": "SMOPCA takes multiple modalities $Y=\{Y_1, ..., Y_K\}$ and location information $S=\{s_1, ... s_n\}$ as inputs, learning joint latent factors $Z$ through factor analysis models. It assumes each latent factor $Z_l$ adheres to a multivariate normal (MVN) prior distribution $Z_l \\sim \\text{MVN}(0, \\Sigma_l)$ to capture spatial dependencies, where $\\Sigma_l$ is a covariance matrix calculated based on location $S$. We evaluated SMOPCA on five CITE-seq and two SMAGE-seq datasets with simulated spatial coordinates. Results show SMOPCA outperforms competitors (BREM-SC, CiteFuse, scMDC, Seurat, TotalVI, SpatialPCA, PCA+K-means) across metrics like Adjusted Mutual Information (AMI), Normalized Mutual Information (NMI), and Adjusted Rand Index (ARI). Latent vectors learned by SMOPCA exhibit improved capacity to distinguish cell types compared to SpatialPCA."
+    },
+    {
+        "block_id": 4,
+        "section": "Results - Simulation II & Real Data Application",
+        "text": "To demonstrate capabilities with more modalities, we simulated datasets with three modalities based on the LIBD human dorsolateral prefrontal cortex (DLPFC) dataset using SRTsim. SMOPCA outperformed PCA+K-means, SpatialPCA, SpaVAE, and SpatialGlue_3M. Applied to real spatial-CITE-seq data of human tonsil tissue, SMOPCA yielded spatially smoother clustering results concordant with tissue images, achieving the highest Moran's I score and lowest LISI score. It accurately annotated clusters corresponding to crypt epithelia, specific T cell zones, and germinal centers. Differential expression analysis identified significant genes and proteins (e.g., CD3, CD21, Mac2/Galectin3) specific to these regions."
+    },
+    {
+        "block_id": 5,
+        "section": "Results - More Applications & Single-Cell Data",
+        "text": "SMOPCA was applied to Stereo-CITE-seq data (mouse thymus) and spatial ATAC-RNA-seq data (mouse embryonic brain). In the thymus data, it identified medulla, cortex, and connective tissue capsule regions. In the brain data, it distinguished ventricular zone (VZ) from pallium stratum, validated by marker genes (SOX2 for VZ, TBR1 for pallium). Furthermore, SMOPCA is applicable to single-cell multi-omics data by using pseudo-spatial coordinates generated from UMAP. Experiments on real CITE-seq and SMAGE-seq datasets show that with UMAP coordinates, SMOPCA yields superior or comparable clustering results to state-of-the-art methods like scMDC."
+    },
+    {
+        "block_id": 6,
+        "section": "Methods - Model & Inference",
+        "text": "SMOPCA models each modality $k$ as $Y_k = W_k Z + E_k$, where $Z$ is the shared latent factor matrix and $E_k$ is the residual error. Each latent factor $Z_l$ follows a multivariate normal distribution with covariance $\\Sigma_l$. The ij-th element of $\\Sigma_l$ is defined by a kernel function, defaulting to the Matern kernel with $v=3/2$: $k_{v=3/2,\\gamma}(s_i, s_j) = (1 + \\frac{\\sqrt{3}\\|s_i - s_j\\|}{\\gamma}) \\exp(-\\frac{\\sqrt{3}\\|s_i - s_j\\|}{\\gamma})$. Inference is performed via Maximum Likelihood Estimation (MLE). The marginal likelihood for modality $k$ is derived, and parameters $W_k$ and $\\sigma_k^2$ are estimated iteratively. The posterior mean of $Z$ provides the final low-dimensional representation. The algorithm involves eigen decomposition on the kernel matrix $\\Sigma$ for scalable computation."
+    },
+    {
+        "block_id": 7,
+        "section": "Discussion & Conclusion",
+        "text": "SMOPCA is a novel dependency-aware dimension reduction method tailored for spatial multi-omics data. It explicitly integrates spatial location information into latent factors, preserving neighborhood similarity on the low-dimensional manifold. Unlike SpatialPCA which uses fixed heuristics for bandwidth, SMOPCA learns the lengthscale parameter $\\gamma$ through optimization of marginal likelihood, though users can specify it based on prior knowledge. The method is flexible, applicable to single-cell multi-omics via pseudo-coordinates, and robust to choices of kernel functions. While current implementation has $O(n^3)$ time complexity, future work aims to optimize this. SMOPCA provides a powerful framework for enhancing downstream analyses like visualization, clustering, and differential expression in spatial multi-omics studies."
+    }
+]
